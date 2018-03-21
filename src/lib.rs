@@ -1,16 +1,18 @@
 mod pdg;
+mod model;
 
 extern crate serde;
+#[macro_use]
+extern crate serde_derive;
 extern crate serde_json;
 
 use serde_json::Value;
 
-#[macro_use]
-extern crate serde_derive;
-
 use std::io::BufRead;
 // use std::fmt::Debug;
 use std::cmp::Ordering;
+
+use model::allocation::Allocation;
 
 #[derive(Serialize, Deserialize)]
 struct serdes_compute {
@@ -192,6 +194,8 @@ impl Document {
     pub fn transfers_mut(&mut self) -> &mut Vec<Transfer> {
         return &mut self.transfers;
     }
+
+    pub fn add_allocation(&mut self, a: &Allocation) {}
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
@@ -206,6 +210,16 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
             Ok(v) => v,
             Err(e) => return Err(DecoderError::JsonError(e)),
         };
+
+        // try decoding as allocation
+        match model::allocation::from_value(&mut v) {
+            Err(e) => (),
+            Ok(a) => {
+                doc.add_allocation(&a);
+                continue;
+            }
+        };
+
         match v.get_mut("compute") {
             None => (),
             Some(v) => {
