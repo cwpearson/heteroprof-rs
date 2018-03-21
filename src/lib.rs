@@ -34,19 +34,6 @@ pub struct Compute {
 }
 
 impl Compute {
-    pub fn new() -> Compute {
-        return Compute {
-            kind: String::new(),
-            cuda_device_id: 0,
-            name: String::new(),
-            start: 0 as f64,
-            dur: 0 as f64,
-            completed: 0 as f64,
-            stream_id: 0,
-            correlation_id: 0,
-        };
-    }
-
     fn from_serdes_compute(sc: &serdes_compute) -> Compute {
         let kind = sc.kind.clone();
         let cuda_device_id = sc.cuda_device_id.parse::<u64>().unwrap();
@@ -142,6 +129,16 @@ impl Transfer {
             runtime_correlation_id,
         };
     }
+
+    pub fn cmp_start(&self, other: &Compute) -> Ordering {
+        if self.start == other.start {
+            return Ordering::Equal;
+        } else if self.start < other.start {
+            return Ordering::Less;
+        } else {
+            return Ordering::Greater;
+        }
+    }
 }
 
 #[test]
@@ -188,6 +185,10 @@ impl Document {
 
     pub fn transfers(&self) -> &Vec<Transfer> {
         return &self.transfers;
+    }
+
+    pub fn transfers_mut(&mut self) -> &mut Vec<Transfer> {
+        return &mut self.transfers;
     }
 }
 
