@@ -2,13 +2,20 @@ use std::hash::{Hash, Hasher};
 
 use std::mem;
 
-#[derive(PartialOrd, PartialEq, Clone, Copy)]
-pub struct Node {
-    start: f64,
-}
-
+#[derive(Clone, Copy)]
 struct Float {
     f: f64,
+}
+
+#[derive(Hash, PartialOrd, PartialEq, Clone, Copy)]
+pub struct Node {
+    start: Float,
+}
+
+impl Node {
+    pub fn as_f64(&self) -> f64 {
+        return self.start;
+    }
 }
 
 impl Hash for Float {
