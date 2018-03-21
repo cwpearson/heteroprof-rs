@@ -68,7 +68,7 @@ impl Document {
         };
     }
 
-    fn computes(&self) -> &Vec<Compute> {
+    pub fn computes(&self) -> &Vec<Compute> {
         return &self.computes;
     }
 }
