@@ -131,5 +131,6 @@ fn document_test() {
                     "correlation_id":"1825"}
                   }"#;
     let mut reader = BufReader::new(data.as_bytes());
-    let d: Document = decode_document(&mut reader).unwrap();
+    let doc: Document = decode_document(&mut reader).unwrap();
+    assert_eq!(doc.computes[0].cuda_device_id, "0");
 }
