@@ -130,7 +130,7 @@ impl Transfer {
         };
     }
 
-    pub fn cmp_start(&self, other: &Compute) -> Ordering {
+    pub fn cmp_start(&self, other: &Transfer) -> Ordering {
         if self.start == other.start {
             return Ordering::Equal;
         } else if self.start < other.start {
