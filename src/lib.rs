@@ -8,6 +8,7 @@ extern crate serde_derive;
 
 use std::io::BufRead;
 use std::fmt::Debug;
+use std::cmp::Ordering;
 
 #[derive(Serialize, Deserialize)]
 struct serdes_compute {
@@ -65,6 +66,16 @@ impl Compute {
             stream_id: stream_id,
             correlation_id: correlation_id,
         };
+    }
+
+    pub fn cmp_start(&self, other: &Compute) -> Ordering {
+        if self.start == other.start {
+            return Ordering::Equal;
+        } else if self.start < other.start {
+            return Ordering::Less;
+        } else {
+            return Ordering::Greater;
+        }
     }
 }
 
