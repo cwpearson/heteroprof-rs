@@ -7,6 +7,7 @@ use serde_json::{Error, Value};
 extern crate serde_derive;
 
 use std::io::BufRead;
+use std::fmt::Debug;
 
 #[derive(Serialize, Deserialize)]
 pub struct Compute {
@@ -48,6 +49,7 @@ fn transfer_test() {
     let t: Transfer = serde_json::from_str(data).unwrap();
 }
 
+#[derive(Debug)]
 pub enum DecoderError {
     IoError(std::io::Error),
     JsonError(serde_json::Error),
@@ -69,19 +71,40 @@ impl Document {
 
 type DecoderResult<T> = Result<T, DecoderError>;
 
+// pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
+//     let mut doc = Document::new();
+//     let mut line = String::new();
+//     loop {
+//         let bytes = match br.read_line(&mut line) {
+//             Ok(bytes) => bytes,
+//             Err(e) => return Err(DecoderError::IoError(e)),
+//         };
+//         println!("{} {}", bytes, line);
+//         let mut v: Value = match serde_json::from_str(&line) {
+//             Ok(v) => v,
+//             Err(e) => return Err(DecoderError::JsonError(e)),
+//         };
+
+//         match v.get_mut("compute") {
+//             None => (),
+//             Some(v) => {
+//                 let c: Compute = serde_json::from_value(v.take()).unwrap();
+//                 doc.computes.push(c);
+//             }
+//         }
+//     }
+// }
+
 pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
     let mut doc = Document::new();
-    let mut line = String::new();
-    loop {
-        let bytes = match br.read_line(&mut line) {
-            Ok(bytes) => bytes,
-            Err(e) => return Err(DecoderError::IoError(e)),
-        };
-        let mut v: Value = match serde_json::from_str(&line) {
+
+    let stream = serde_json::Deserializer::from_reader(br).into_iter::<Value>();
+
+    for v in stream {
+        let mut v = match v {
             Ok(v) => v,
             Err(e) => return Err(DecoderError::JsonError(e)),
         };
-
         match v.get_mut("compute") {
             None => (),
             Some(v) => {
@@ -89,6 +112,24 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
                 doc.computes.push(c);
             }
         }
-        println!("{}", bytes);
     }
+
+    Ok(doc)
+}
+
+#[test]
+fn document_test() {
+    use std::io::BufReader;
+    let data = r#"{"compute":
+                    {"cuda_device_id":"0",
+                    "kind":"cupti_kernel3",
+                    "name": "_ZN7mshadow4cuda13MapPlanKernelINS_2sv6savetoELi8ENS_4expr4PlanINS_6TensorINS_3gpuELi2EfEEfEENS5_INS4_9ScalarExpIfEEfEEEEvT1_jNS_5ShapeILi2EEET2_",
+                    "start":"1.5215767292957988e+18",
+                    "dur":"3968",
+                    "completed":"0",
+                    "stream_id":"15",
+                    "correlation_id":"1825"}
+                  }"#;
+    let mut reader = BufReader::new(data.as_bytes());
+    let d: Document = decode_document(&mut reader).unwrap();
 }
