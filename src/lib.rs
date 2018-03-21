@@ -1,25 +1,25 @@
 extern crate serde;
 extern crate serde_json;
 
-use serde_json::{Error, Value};
+use serde_json::Value;
 
 #[macro_use]
 extern crate serde_derive;
 
 use std::io::BufRead;
-use std::fmt::Debug;
+// use std::fmt::Debug;
 use std::cmp::Ordering;
 
 #[derive(Serialize, Deserialize)]
 struct serdes_compute {
-    pub kind: String,
-    pub cuda_device_id: String,
-    pub name: String,
-    pub start: String,
-    pub dur: String,
-    pub completed: String,
-    pub stream_id: String,
-    pub correlation_id: String,
+    kind: String,
+    cuda_device_id: String,
+    name: String,
+    start: String,
+    dur: String,
+    completed: String,
+    stream_id: String,
+    correlation_id: String,
 }
 
 pub struct Compute {
@@ -95,7 +95,7 @@ fn compute_test() {
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct serdes_transfer {
+struct serdes_transfer {
     kind: String,
     cuda_device_id: String,
     src_kind: String,
@@ -108,15 +108,15 @@ pub struct serdes_transfer {
 }
 
 pub struct Transfer {
-    kind: String,
-    cuda_device_id: u64,
-    src_kind: String,
-    dst_kind: String,
-    start: f64,
-    dur: f64,
-    stream_id: u64,
-    correlation_id: u64,
-    runtime_correlation_id: u64,
+    pub kind: String,
+    pub cuda_device_id: u64,
+    pub src_kind: String,
+    pub dst_kind: String,
+    pub start: f64,
+    pub dur: f64,
+    pub stream_id: u64,
+    pub correlation_id: u64,
+    pub runtime_correlation_id: u64,
 }
 
 impl Transfer {
