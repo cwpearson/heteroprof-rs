@@ -67,6 +67,10 @@ impl Document {
             transfers: vec![],
         };
     }
+
+    fn computes(&self) -> &Vec<Compute> {
+        return &self.computes;
+    }
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
