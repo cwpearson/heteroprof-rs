@@ -216,6 +216,7 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
             Err(e) => (),
             Ok(a) => {
                 doc.add_allocation(&a);
+                println!("alloc!");
                 continue;
             }
         };
