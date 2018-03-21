@@ -71,30 +71,6 @@ impl Document {
 
 type DecoderResult<T> = Result<T, DecoderError>;
 
-// pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
-//     let mut doc = Document::new();
-//     let mut line = String::new();
-//     loop {
-//         let bytes = match br.read_line(&mut line) {
-//             Ok(bytes) => bytes,
-//             Err(e) => return Err(DecoderError::IoError(e)),
-//         };
-//         println!("{} {}", bytes, line);
-//         let mut v: Value = match serde_json::from_str(&line) {
-//             Ok(v) => v,
-//             Err(e) => return Err(DecoderError::JsonError(e)),
-//         };
-
-//         match v.get_mut("compute") {
-//             None => (),
-//             Some(v) => {
-//                 let c: Compute = serde_json::from_value(v.take()).unwrap();
-//                 doc.computes.push(c);
-//             }
-//         }
-//     }
-// }
-
 pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
     let mut doc = Document::new();
 
