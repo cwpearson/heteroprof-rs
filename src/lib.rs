@@ -10,9 +10,62 @@ use std::io::BufRead;
 use std::fmt::Debug;
 
 #[derive(Serialize, Deserialize)]
+struct serdes_compute {
+    pub kind: String,
+    pub cuda_device_id: String,
+    pub name: String,
+    pub start: String,
+    pub dur: String,
+    pub completed: String,
+    pub stream_id: String,
+    pub correlation_id: String,
+}
+
 pub struct Compute {
-    kind: String,
-    cuda_device_id: String,
+    pub kind: String,
+    pub cuda_device_id: u64,
+    pub name: String,
+    pub start: f64,
+    pub dur: f64,
+    pub completed: f64,
+    pub stream_id: u64,
+    pub correlation_id: u64,
+}
+
+impl Compute {
+    pub fn new() -> Compute {
+        return Compute {
+            kind: String::new(),
+            cuda_device_id: 0,
+            name: String::new(),
+            start: 0 as f64,
+            dur: 0 as f64,
+            completed: 0 as f64,
+            stream_id: 0,
+            correlation_id: 0,
+        };
+    }
+
+    fn from_serdes_compute(sc: &serdes_compute) -> Compute {
+        let kind = sc.kind.clone();
+        let cuda_device_id = sc.cuda_device_id.parse::<u64>().unwrap();
+        let name = sc.name.clone();
+        let start = sc.start.parse::<f64>().unwrap();
+        let dur = sc.dur.parse::<f64>().unwrap();
+        let completed = sc.completed.parse::<f64>().unwrap();
+        let stream_id = sc.stream_id.parse::<u64>().unwrap();
+        let correlation_id = sc.correlation_id.parse::<u64>().unwrap();
+        return Compute {
+            kind: kind,
+            cuda_device_id: cuda_device_id,
+            name: name,
+            start: start,
+            dur: dur,
+            completed: completed,
+            stream_id: stream_id,
+            correlation_id: correlation_id,
+        };
+    }
 }
 
 #[test]
@@ -25,13 +78,59 @@ fn compute_test() {
                    "completed":"0",
                    "stream_id":"15",
                    "correlation_id":"1825"}"#;
-    let c: Compute = serde_json::from_str(data).unwrap();
+    let sc: serdes_compute = serde_json::from_str(data).unwrap();
+    let c = Compute::from_serdes_compute(&sc);
+    assert_eq!(c.kind, "cupti_kernel3");
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct Transfer {
+pub struct serdes_transfer {
     kind: String,
     cuda_device_id: String,
+    src_kind: String,
+    dst_kind: String,
+    start: String,
+    dur: String,
+    stream_id: String,
+    correlation_id: String,
+    runtime_correlation_id: String,
+}
+
+pub struct Transfer {
+    kind: String,
+    cuda_device_id: u64,
+    src_kind: String,
+    dst_kind: String,
+    start: f64,
+    dur: f64,
+    stream_id: u64,
+    correlation_id: u64,
+    runtime_correlation_id: u64,
+}
+
+impl Transfer {
+    fn from_serdes_transfer(st: &serdes_transfer) -> Transfer {
+        let kind = st.kind.clone();
+        let src_kind = st.src_kind.clone();
+        let dst_kind = st.dst_kind.clone();
+        let cuda_device_id = st.cuda_device_id.parse::<u64>().unwrap();
+        let start = st.start.parse::<f64>().unwrap();
+        let dur = st.dur.parse::<f64>().unwrap();
+        let stream_id = st.stream_id.parse::<u64>().unwrap();
+        let correlation_id = st.correlation_id.parse::<u64>().unwrap();
+        let runtime_correlation_id = st.runtime_correlation_id.parse::<u64>().unwrap();
+        return Transfer {
+            kind: kind,
+            cuda_device_id,
+            src_kind,
+            dst_kind,
+            start,
+            dur,
+            stream_id,
+            correlation_id,
+            runtime_correlation_id,
+        };
+    }
 }
 
 #[test]
@@ -46,7 +145,8 @@ fn transfer_test() {
                    "stream_id":"35",
                    "correlation_id":"4031",
                    "runtime_correlation_id":"0"}"#;
-    let t: Transfer = serde_json::from_str(data).unwrap();
+    let st: serdes_transfer = serde_json::from_str(data).unwrap();
+    let t = Transfer::from_serdes_transfer(&st);
 }
 
 #[derive(Debug)]
@@ -71,6 +171,10 @@ impl Document {
     pub fn computes(&self) -> &Vec<Compute> {
         return &self.computes;
     }
+
+    pub fn transfers(&self) -> &Vec<Transfer> {
+        return &self.transfers;
+    }
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
@@ -88,8 +192,19 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
         match v.get_mut("compute") {
             None => (),
             Some(v) => {
-                let c: Compute = serde_json::from_value(v.take()).unwrap();
+                let sc: serdes_compute = serde_json::from_value(v.take()).unwrap();
+                let c = Compute::from_serdes_compute(&sc);
                 doc.computes.push(c);
+                continue;
+            }
+        }
+        match v.get_mut("transfer") {
+            None => (),
+            Some(v) => {
+                let st: serdes_transfer = serde_json::from_value(v.take()).unwrap();
+                let t = Transfer::from_serdes_transfer(&st);
+                doc.transfers.push(t);
+                continue;
             }
         }
     }
@@ -112,5 +227,5 @@ fn document_test() {
                   }"#;
     let mut reader = BufReader::new(data.as_bytes());
     let doc: Document = decode_document(&mut reader).unwrap();
-    assert_eq!(doc.computes[0].cuda_device_id, "0");
+    assert_eq!(doc.computes[0].cuda_device_id, 0);
 }
