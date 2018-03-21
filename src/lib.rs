@@ -182,6 +182,9 @@ impl Document {
     pub fn computes(&self) -> &Vec<Compute> {
         return &self.computes;
     }
+    pub fn computes_mut(&mut self) -> &mut Vec<Compute> {
+        return &self.computes;
+    }
 
     pub fn transfers(&self) -> &Vec<Transfer> {
         return &self.transfers;
