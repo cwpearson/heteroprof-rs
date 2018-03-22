@@ -3,7 +3,7 @@ extern crate serde_json;
 
 #[derive(Serialize, Deserialize)]
 struct AddressSpaceRaw {
-    ty: String,
+    #[serde(rename = "type")] ty: String,
     initialized: String,
 }
 
@@ -11,26 +11,22 @@ enum Type {
     UVA,
 }
 
+#[derive(Serialize, Deserialize)]
 struct AddressSpace {
-    ty: Type,
+    ty: String,
     initialized: String,
 }
 
 #[derive(Serialize, Deserialize)]
-struct AllocationRaw {
-    id: String,
-    pos: String,
-    size: String,
-    addrsp: AddressSpaceRaw,
+struct AllocationWrapperRaw {
+    allocation: Allocation,
 }
 
 #[derive(Serialize, Deserialize)]
-struct AllocationWrapperRaw {
-    allocation: AllocationRaw,
-}
-
 pub struct Allocation {
     id: u64,
+    pos: u64,
+    size: u64,
 }
 
 #[derive(Debug)]
@@ -46,9 +42,7 @@ pub fn from_value(v: &mut serde_json::Value) -> AllocationResult {
         Err(e) => return Err(e),
     };
 
-    let a = Allocation {
-        id: awr.allocation.id.parse::<u64>().unwrap(),
-    };
+    let a = awr.allocation;
 
     Ok(a)
 }
@@ -57,13 +51,15 @@ pub fn from_value(v: &mut serde_json::Value) -> AllocationResult {
 fn allocation_test() {
     use std::io::BufReader;
     let data = r#"{"allocation":
-                    {"id":"69268522399040",
-                    "pos":"1099889124352",
-                    "size":"112",
-                    "addrsp":"{\"type\":\"uva\"}\n",
-                    "mem":"pageable",
-                    "loc":"{\"type\":\"cuda\",\"id\":\"0\"}\n"}
+                    {"addrsp":{"type":"uva"},
+                    "id":69268689182064,
+                    "loc":{"id":0,"type":"cuda"},
+                    "mem":{"type":"pageable"},
+                    "pos":1099895410688,
+                    "size":2032}
                 }"#;
     let mut reader = BufReader::new(data.as_bytes());
-    let a: AllocationWrapperRaw = serde_json::from_str(&data).unwrap();
+    let mut v: serde_json::Value = serde_json::from_str(&data).unwrap();
+    let a: Allocation = from_value(&mut v).unwrap();
+    assert_eq!(a.id, 69268689182064 as u64);
 }
