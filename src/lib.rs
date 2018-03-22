@@ -6,13 +6,12 @@ extern crate serde;
 extern crate serde_derive;
 extern crate serde_json;
 
-use serde_json::Value;
-
 use std::io::BufRead;
 // use std::fmt::Debug;
 use std::cmp::Ordering;
 
 use model::allocation::Allocation;
+use model::value;
 
 #[derive(Serialize, Deserialize)]
 struct serdes_compute {
@@ -196,6 +195,7 @@ impl Document {
     }
 
     pub fn add_allocation(&mut self, a: &Allocation) {}
+    pub fn add_value(&mut self, v: &value::Value) {}
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
@@ -203,7 +203,7 @@ type DecoderResult<T> = Result<T, DecoderError>;
 pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
     let mut doc = Document::new();
 
-    let stream = serde_json::Deserializer::from_reader(br).into_iter::<Value>();
+    let stream = serde_json::Deserializer::from_reader(br).into_iter::<serde_json::Value>();
 
     for v in stream {
         let v = match v {
@@ -225,7 +225,14 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
                 Err(e) => (),
                 Ok(a) => {
                     doc.add_allocation(&a);
-                    println!("alloc!");
+                    continue;
+                }
+            }
+        } else if o.contains_key("val") {
+            match model::value::from_value(v) {
+                Err(e) => (),
+                Ok(a) => {
+                    doc.add_value(&a);
                     continue;
                 }
             }
@@ -283,5 +290,6 @@ fn document_test() {
                   }"#;
     let mut reader = BufReader::new(data.as_bytes());
     let doc: Document = decode_document(&mut reader).unwrap();
+    assert_eq!(doc.computes.len(), 1);
     assert_eq!(doc.computes[0].cuda_device_id, 0);
 }
