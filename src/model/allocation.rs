@@ -36,8 +36,8 @@ pub enum AllocationError {
 
 type AllocationResult = Result<Allocation, serde_json::Error>;
 
-pub fn from_value(v: &mut serde_json::Value) -> AllocationResult {
-    let awr: AllocationWrapperRaw = match serde_json::from_value(v.take()) {
+pub fn from_value(v: serde_json::Value) -> AllocationResult {
+    let awr: AllocationWrapperRaw = match serde_json::from_value(v) {
         Ok(a) => a,
         Err(e) => return Err(e),
     };
@@ -59,7 +59,7 @@ fn allocation_test() {
                     "size":2032}
                 }"#;
     let mut reader = BufReader::new(data.as_bytes());
-    let mut v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let a: Allocation = from_value(&mut v).unwrap();
+    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
+    let a: Allocation = from_value(v).unwrap();
     assert_eq!(a.id, 69268689182064 as u64);
 }

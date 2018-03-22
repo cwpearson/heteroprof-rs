@@ -206,39 +206,63 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
     let stream = serde_json::Deserializer::from_reader(br).into_iter::<Value>();
 
     for v in stream {
-        let mut v = match v {
+        let v = match v {
             Ok(v) => v,
             Err(e) => return Err(DecoderError::JsonError(e)),
         };
 
-        // try decoding as allocation
-        match model::allocation::from_value(&mut v) {
-            Err(e) => (),
-            Ok(a) => {
-                doc.add_allocation(&a);
-                println!("alloc!");
+        let helper = v.clone();
+        let o = match helper.as_object() {
+            Some(o) => o,
+            None => {
+                println!("No object: {}", v);
                 continue;
             }
         };
 
-        match v.get_mut("compute") {
-            None => (),
-            Some(v) => {
-                let sc: serdes_compute = serde_json::from_value(v.take()).unwrap();
-                let c = Compute::from_serdes_compute(&sc);
-                doc.computes.push(c);
-                continue;
+        if o.contains_key("allocation") {
+            match model::allocation::from_value(v) {
+                Err(e) => (),
+                Ok(a) => {
+                    doc.add_allocation(&a);
+                    println!("alloc!");
+                    continue;
+                }
             }
+        } else if o.contains_key("compute") {
+
+        } else if o.contains_key("transfer") {
+
         }
-        match v.get_mut("transfer") {
-            None => (),
-            Some(v) => {
-                let st: serdes_transfer = serde_json::from_value(v.take()).unwrap();
-                let t = Transfer::from_serdes_transfer(&st);
-                doc.transfers.push(t);
-                continue;
-            }
-        }
+
+        // try decoding as allocation
+        // match model::allocation::from_value(v) {
+        //     Err(e) => (),
+        //     Ok(a) => {
+        //         doc.add_allocation(&a);
+        //         println!("alloc!");
+        //         continue;
+        //     }
+        // };
+
+        // match v.get_mut("compute") {
+        //     None => (),
+        //     Some(v) => {
+        //         let sc: serdes_compute = serde_json::from_value(v.take()).unwrap();
+        //         let c = Compute::from_serdes_compute(&sc);
+        //         doc.computes.push(c);
+        //         continue;
+        //     }
+        // }
+        // match v.get_mut("transfer") {
+        //     None => (),
+        //     Some(v) => {
+        //         let st: serdes_transfer = serde_json::from_value(v.take()).unwrap();
+        //         let t = Transfer::from_serdes_transfer(&st);
+        //         doc.transfers.push(t);
+        //         continue;
+        //     }
+        // }
     }
 
     Ok(doc)
