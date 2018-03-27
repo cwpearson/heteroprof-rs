@@ -2,9 +2,9 @@ extern crate petgraph;
 
 use self::petgraph::graphmap::DiGraphMap;
 use pdg::edge::Edge;
-use Compute;
+use pdg::compute::Compute;
 use Document;
-use Transfer;
+use pdg::transfer::Transfer;
 use std::collections::HashMap;
 
 pub struct PDG {
@@ -31,12 +31,12 @@ impl PDG {
 pub fn from_document(doc: &Document) -> PDG {
     let mut pdg = PDG::new();
 
-    for c in doc.computes() {
-        pdg.add_compute(c);
+    for c in doc.apis() {
+        // pdg.add_compute(c);
     }
 
-    for t in doc.transfers() {
-        pdg.add_transfer(t);
+    for t in doc.activities() {
+        // pdg.add_transfer(t);
     }
 
     return pdg;

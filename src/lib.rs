@@ -1,5 +1,7 @@
 mod pdg;
-mod model;
+mod activity;
+mod callback;
+mod cuda;
 
 extern crate serde;
 #[macro_use]
@@ -8,12 +10,6 @@ extern crate serde_json;
 
 use std::io::BufRead;
 
-use model::allocation::Allocation;
-use model::compute::Compute;
-use model::transfer::Transfer;
-use model::value;
-use model::driver_api::DriverApi;
-
 #[derive(Debug)]
 pub enum DecoderError {
     IoError(std::io::Error),
@@ -21,35 +17,35 @@ pub enum DecoderError {
 }
 
 pub struct Document {
-    transfers: Vec<Transfer>,
-    computes: Vec<Compute>,
+    activities: Vec<activity::Record>,
+    apis: Vec<callback::Record>,
 }
 
 impl Document {
     fn new() -> Document {
         return Document {
-            computes: vec![],
-            transfers: vec![],
+            activities: vec![],
+            apis: vec![],
         };
     }
 
-    pub fn computes(&self) -> &Vec<Compute> {
-        return &self.computes;
+    pub fn activities(&self) -> &Vec<activity::Record> {
+        return &self.activities;
     }
-    pub fn computes_mut(&mut self) -> &mut Vec<Compute> {
-        return &mut self.computes;
-    }
-
-    pub fn transfers(&self) -> &Vec<Transfer> {
-        return &self.transfers;
+    pub fn activities_mut(&mut self) -> &mut Vec<activity::Record> {
+        return &mut self.activities;
     }
 
-    pub fn transfers_mut(&mut self) -> &mut Vec<Transfer> {
-        return &mut self.transfers;
+    pub fn apis(&self) -> &Vec<callback::Record> {
+        return &self.apis;
     }
 
-    pub fn add_allocation(&mut self, a: &Allocation) {}
-    pub fn add_value(&mut self, v: &value::Value) {}
+    pub fn apis_mut(&mut self) -> &mut Vec<callback::Record> {
+        return &mut self.apis;
+    }
+
+    pub fn add_activity(&mut self, r: &activity::Record) {}
+    pub fn add_api(&mut self, r: &callback::Record) {}
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
@@ -74,26 +70,38 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
             }
         };
 
-        if o.contains_key("allocation") {
-            match model::allocation::from_value(v) {
+        // if o.contains_key("allocation") {
+        //     match cuda::allocation::from_value(v) {
+        //         Err(e) => (),
+        //         Ok(a) => {
+        //             doc.add_allocation(&a);
+        //             continue;
+        //         }
+        //     }
+        // } else if o.contains_key("val") {
+        //     match cuda::value::from_value(v) {
+        //         Err(e) => (),
+        //         Ok(a) => {
+        //             doc.add_value(&a);
+        //             continue;
+        //         }
+        //     }
+        if o["hprof_kind"] == "cupti_callback" {
+            match callback::from_value(v) {
                 Err(e) => (),
                 Ok(a) => {
-                    doc.add_allocation(&a);
+                    doc.add_api(&a);
                     continue;
                 }
             }
-        } else if o.contains_key("val") {
-            match model::value::from_value(v) {
+        } else if o["hprof_kind"] == "cupti_activity" {
+            match activity::from_value(v) {
                 Err(e) => (),
                 Ok(a) => {
-                    doc.add_value(&a);
+                    doc.add_activity(&a);
                     continue;
                 }
             }
-        } else if o.contains_key("compute") {
-
-        } else if o.contains_key("transfer") {
-
         }
 
         // try decoding as allocation
@@ -144,6 +152,6 @@ fn document_test() {
                   }"#;
     let mut reader = BufReader::new(data.as_bytes());
     let doc: Document = decode_document(&mut reader).unwrap();
-    assert_eq!(doc.computes.len(), 1);
-    assert_eq!(doc.computes[0].cuda_device_id, 0);
+    assert_eq!(doc.apis.len(), 1);
+    // assert_eq!(doc.apis[0].cuda_device_id, 0);
 }

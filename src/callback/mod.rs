@@ -2,35 +2,37 @@ extern crate serde;
 extern crate serde_json;
 
 #[derive(Serialize, Deserialize)]
-#[serde(tag = "name")]
-pub enum DriverApi {
-    #[serde(rename = "cudaMalloc")]
-    CudaMalloc {
-        calling_tid: u64,
-        context_uid: u64,
-        id: u64,
-        ptr: u64,
-        size: u64,
-        wall_end: u64,
-        wall_start: u64,
-    },
+pub struct CudaMallocS {
+    calling_tid: u64,
+    context_uid: u64,
+    id: u64,
+    ptr: u64,
+    size: u64,
+    wall_end: u64,
+    wall_start: u64,
 }
 
-type DriverApiResult = Result<DriverApi, serde_json::Error>;
+#[derive(Serialize, Deserialize)]
+#[serde(tag = "name")]
+pub enum Record {
+    #[serde(rename = "cudaMalloc")] CudaMalloc(CudaMallocS),
+}
+
+type DriverApiResult = Result<Record, serde_json::Error>;
 
 pub fn from_value(v: serde_json::Value) -> DriverApiResult {
-    let da: DriverApi = match serde_json::from_value(v) {
+    let r: Record = match serde_json::from_value(v) {
         Ok(v) => v,
         Err(e) => return Err(e),
     };
 
-    Ok(da)
+    Ok(r)
 }
 
 #[test]
 fn cuda_malloc_test() {
     use std::io::BufReader;
-    use DriverApi::*;
+    use callback::*;
     let data = r#"{"calling_tid":1390,
                     "context_uid":0,
                     "correlation_id":200,
@@ -44,17 +46,9 @@ fn cuda_malloc_test() {
                     "wall_start":1522106422797168222}"#;
     let mut reader = BufReader::new(data.as_bytes());
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let da: DriverApi = from_value(v).unwrap();
-    match da {
-        CudaMalloc {
-            calling_tid,
-            context_uid,
-            id,
-            ptr,
-            size,
-            wall_end,
-            wall_start,
-        } => assert_eq!(id, 2 as u64),
+    let r: Record = from_value(v).unwrap();
+    match r {
+        Record::CudaMalloc(s) => assert_eq!(s.id, 2 as u64),
         _ => panic!("Expected a CudaMalloc!"),
     }
 }
