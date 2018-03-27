@@ -87,20 +87,14 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
         //         }
         //     }
         if o["hprof_kind"] == "cupti_callback" {
-            match callback::from_value(v) {
-                Err(e) => (),
-                Ok(a) => {
-                    doc.add_api(&a);
-                    continue;
-                }
+            if let Ok(a) = callback::from_value(v) {
+                doc.add_api(&a);
+                continue;
             }
         } else if o["hprof_kind"] == "cupti_activity" {
-            match activity::from_value(v) {
-                Err(e) => (),
-                Ok(a) => {
-                    doc.add_activity(&a);
-                    continue;
-                }
+            if let Ok(a) = activity::from_value(v) {
+                doc.add_activity(&a);
+                continue;
             }
         }
 
