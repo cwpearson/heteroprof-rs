@@ -12,6 +12,7 @@ use model::allocation::Allocation;
 use model::compute::Compute;
 use model::transfer::Transfer;
 use model::value;
+use model::driver_api::DriverApi;
 
 #[derive(Debug)]
 pub enum DecoderError {
