@@ -70,7 +70,6 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
         if let serde_json::Value::Object(obj) = kind_check_val {
             if let Some(kind) = obj.get("hprof_kind") {
                 if kind.as_str().unwrap() == "cupti_callback" {
-                    println!("{}", kind);
                     if let Ok(a) = callback::from_value(val.take()) {
                         doc.add_api(a);
                         continue;
