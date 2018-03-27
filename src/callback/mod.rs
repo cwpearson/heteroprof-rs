@@ -1,6 +1,8 @@
 extern crate serde;
 extern crate serde_json;
 
+use cuda::dim3::Dim3;
+
 macro_rules! add_common_fields {
     (pub struct $name:ident { $( $field:ident: $ty:ty ),* $(,)* }) => {
         #[derive(Serialize, Deserialize)]
@@ -39,12 +41,22 @@ pub struct CudaSetupArgumentS {
 }
 );
 
+add_common_fields!(
+pub struct CudaConfigureCallS {
+    grid_dim: Dim3<u64>,
+    block_dim: Dim3<u64>,
+    shared_mem: u64,
+    stream: u64,
+}
+);
+
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
     #[serde(rename = "cudaMalloc")] CudaMalloc(CudaMallocS),
     #[serde(rename = "cudaMemcpy")] CudaMemcpy(CudaMemcpyS),
     #[serde(rename = "cudaSetupArgument")] CudaSetupArgument(CudaSetupArgumentS),
+    #[serde(rename = "cudaConfigureCall")] CudaConfigureCall(CudaConfigureCallS),
 }
 
 type RecordResult = Result<Record, serde_json::Error>;
@@ -118,5 +130,29 @@ fn cuda_setup_argument_test() {
     match r {
         Record::CudaSetupArgument(s) => assert_eq!(s.id, 12 as u64),
         _ => panic!("Expected a CudaSetupArgument!"),
+    }
+}
+
+#[test]
+fn cuda_configure_call_test() {
+    let data = r#"{
+    "block_dim":{"x":32,"y":32,"z":1},
+    "stream": 100,
+    "shared_mem": 101,
+    "calling_tid":1390,
+    "context_uid":1,
+    "correlation_id":944,
+    "grid_dim":{"x":20,"y":10,"z":1},
+    "hprof_kind":"cupti_callback",
+    "id":742,
+    "name":"cudaConfigureCall",
+    "symbol_name":"",
+    "wall_end":1522106423032561678,
+    "wall_start":1522106423032554701}"#;
+    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
+    let r: Record = from_value(v).unwrap();
+    match r {
+        Record::CudaConfigureCall(s) => assert_eq!(s.id, 742 as u64),
+        _ => panic!("Expected a CudaConfigureCall!"),
     }
 }
