@@ -10,6 +10,7 @@ macro_rules! add_common_fields {
             wall_end: u64,
             id: u64,
             context_uid: u64,
+            symbol_name: String,
             $( $field: $ty ),*
         }
     };
@@ -30,11 +31,20 @@ pub struct CudaMemcpyS {
 }
 );
 
+add_common_fields!(
+pub struct CudaSetupArgumentS {
+    offset: u64,
+    size: u64,
+    arg: u64,
+}
+);
+
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
     #[serde(rename = "cudaMalloc")] CudaMalloc(CudaMallocS),
     #[serde(rename = "cudaMemcpy")] CudaMemcpy(CudaMemcpyS),
+    #[serde(rename = "cudaSetupArgument")] CudaSetupArgument(CudaSetupArgumentS),
 }
 
 type RecordResult = Result<Record, serde_json::Error>;
@@ -86,5 +96,27 @@ fn cuda_memcpy_test() {
     match r {
         Record::CudaMemcpy(s) => assert_eq!(s.id, 6 as u64),
         _ => panic!("Expected a CudaMemcpy!"),
+    }
+}
+
+#[test]
+fn cuda_setup_argument_test() {
+    let data = r#"{"arg":140723405802000,
+    "calling_tid":1390,
+    "context_uid":1,
+    "correlation_id":210,
+    "hprof_kind":"cupti_callback",
+    "id":12,
+    "name":"cudaSetupArgument",
+    "offset":28,
+    "size":4,
+    "symbol_name":"",
+    "wall_end":1522106423007017845,
+    "wall_start":1522106423007014860}"#;
+    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
+    let r: Record = from_value(v).unwrap();
+    match r {
+        Record::CudaSetupArgument(s) => assert_eq!(s.id, 12 as u64),
+        _ => panic!("Expected a CudaSetupArgument!"),
     }
 }
