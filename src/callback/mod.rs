@@ -31,8 +31,6 @@ pub fn from_value(v: serde_json::Value) -> DriverApiResult {
 
 #[test]
 fn cuda_malloc_test() {
-    use std::io::BufReader;
-    use callback::*;
     let data = r#"{"calling_tid":1390,
                     "context_uid":0,
                     "correlation_id":200,
@@ -44,7 +42,6 @@ fn cuda_malloc_test() {
                     "symbol_name":"",
                     "wall_end":1522106423006283946,
                     "wall_start":1522106422797168222}"#;
-    let mut reader = BufReader::new(data.as_bytes());
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
     let r: Record = from_value(v).unwrap();
     match r {
