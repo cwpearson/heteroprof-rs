@@ -59,30 +59,28 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
 
     let stream = serde_json::Deserializer::from_reader(br).into_iter::<serde_json::Value>();
 
-    for v in stream {
-        let v = match v {
-            Ok(v) => v,
+    for val in stream {
+        let mut val = match val {
             Err(e) => return Err(DecoderError::JsonError(e)),
+            Ok(val) => val,
         };
 
-        let helper = v.clone();
-        let o = match helper.as_object() {
-            Some(o) => o,
-            None => {
-                println!("No object: {}", v);
-                continue;
-            }
-        };
+        let kind_check_val = val.clone();
 
-        if o["hprof_kind"] == "cupti_callback" {
-            if let Ok(a) = callback::from_value(v) {
-                doc.add_api(a);
-                continue;
-            }
-        } else if o["hprof_kind"] == "cupti_activity" {
-            if let Ok(a) = activity::from_value(v) {
-                doc.add_activity(a);
-                continue;
+        if let serde_json::Value::Object(obj) = kind_check_val {
+            if let Some(kind) = obj.get("hprof_kind") {
+                if kind.as_str().unwrap() == "cupti_callback" {
+                    println!("{}", kind);
+                    if let Ok(a) = callback::from_value(val.take()) {
+                        doc.add_api(a);
+                        continue;
+                    }
+                } else if kind == "cupti_activity" {
+                    if let Ok(a) = activity::from_value(val.take()) {
+                        doc.add_activity(a);
+                        continue;
+                    }
+                }
             }
         }
     }
