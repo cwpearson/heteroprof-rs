@@ -29,33 +29,3 @@ impl Transfer {
         }
     }
 }
-
-type TransferResult = Result<Transfer, serde_json::Error>;
-
-pub fn from_value(v: serde_json::Value) -> TransferResult {
-    let r: TransferRaw = match serde_json::from_value(v) {
-        Ok(r) => r,
-        Err(e) => return Err(e),
-    };
-    Ok(r.transfer)
-}
-
-#[test]
-fn transfer_test() {
-    use std::io::BufReader;
-    let data = r#"{"transfer":
-        {"correlation_id":4031,
-        "cuda_device_id":1,
-        "cuda_memcpy_kind":"htod",
-        "dst_kind":"device",
-        "dur":1056.0,
-        "kind":"cupti_memcpy",
-        "kv":{},"runtime_correlation_id":0,"src_kind":"pageable",
-        "start":1.5217442373738993e+18,
-        "stream_id":35}
-    }"#;
-    let mut reader = BufReader::new(data.as_bytes());
-    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let t: Transfer = from_value(v).unwrap();
-    assert_eq!(t.stream_id, 35 as u64);
-}

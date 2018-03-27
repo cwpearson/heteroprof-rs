@@ -137,21 +137,21 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
     Ok(doc)
 }
 
-#[test]
-fn document_test() {
-    use std::io::BufReader;
-    let data = r#"{"compute":
-                    {"cuda_device_id":"0",
-                    "kind":"cupti_kernel3",
-                    "name": "_ZN7mshadow4cuda13MapPlanKernelINS_2sv6savetoELi8ENS_4expr4PlanINS_6TensorINS_3gpuELi2EfEEfEENS5_INS4_9ScalarExpIfEEfEEEEvT1_jNS_5ShapeILi2EEET2_",
-                    "start":"1.5215767292957988e+18",
-                    "dur":"3968",
-                    "completed":"0",
-                    "stream_id":"15",
-                    "correlation_id":"1825"}
-                  }"#;
-    let mut reader = BufReader::new(data.as_bytes());
-    let doc: Document = decode_document(&mut reader).unwrap();
-    assert_eq!(doc.apis.len(), 1);
-    // assert_eq!(doc.apis[0].cuda_device_id, 0);
-}
+// #[test]
+// fn document_test() {
+//     use std::io::BufReader;
+//     let data = r#"{"compute":
+//                     {"cuda_device_id":"0",
+//                     "kind":"cupti_kernel3",
+//                     "name": "_ZN7mshadow4cuda13MapPlanKernelINS_2sv6savetoELi8ENS_4expr4PlanINS_6TensorINS_3gpuELi2EfEEfEENS5_INS4_9ScalarExpIfEEfEEEEvT1_jNS_5ShapeILi2EEET2_",
+//                     "start":"1.5215767292957988e+18",
+//                     "dur":"3968",
+//                     "completed":"0",
+//                     "stream_id":"15",
+//                     "correlation_id":"1825"}
+//                   }"#;
+//     let mut reader = BufReader::new(data.as_bytes());
+//     let doc: Document = decode_document(&mut reader).unwrap();
+//     assert_eq!(doc.apis.len(), 1);
+//     // assert_eq!(doc.apis[0].cuda_device_id, 0);
+// }
