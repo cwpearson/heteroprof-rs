@@ -1,4 +1,4 @@
-mod pdg;
+pub mod pdg;
 mod activity;
 mod callback;
 mod cuda;

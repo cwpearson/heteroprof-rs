@@ -4,49 +4,49 @@ extern crate serde_json;
 use cuda::dim3::Dim3;
 
 macro_rules! add_common_fields {
-    (pub struct $name:ident { $( $field:ident: $ty:ty ),* $(,)* }) => {
+    (pub struct $name:ident { $( pub $field:ident: $ty:ty ),* $(,)* }) => {
         #[derive(Serialize, Deserialize)]
         pub struct $name {
-            calling_tid: u64,
-            wall_start: u64,
-            wall_end: u64,
-            id: u64,
-            context_uid: u64,
-            symbol_name: String,
-            $( $field: $ty ),*
+            pub calling_tid: u64,
+            pub wall_start: u64,
+            pub wall_end: u64,
+            pub id: u64,
+            pub context_uid: u64,
+            pub symbol_name: String,
+            $( pub $field: $ty ),*
         }
     };
 }
 
 add_common_fields!(
 pub struct CudaMallocS {
-    ptr: u64,
-    size: u64,
+    pub ptr: u64,
+    pub size: u64,
 }
 );
 
 add_common_fields!(
 pub struct CudaMemcpyS {
-    src: u64,
-    count: u64,
-    dst: u64,
+    pub src: u64,
+    pub count: u64,
+    pub dst: u64,
 }
 );
 
 add_common_fields!(
 pub struct CudaSetupArgumentS {
-    offset: u64,
-    size: u64,
-    arg: u64,
+    pub offset: u64,
+    pub size: u64,
+    pub arg: u64,
 }
 );
 
 add_common_fields!(
 pub struct CudaConfigureCallS {
-    grid_dim: Dim3<u64>,
-    block_dim: Dim3<u64>,
-    shared_mem: u64,
-    stream: u64,
+    pub grid_dim: Dim3<u64>,
+    pub block_dim: Dim3<u64>,
+    pub shared_mem: u64,
+    pub stream: u64,
 }
 );
 

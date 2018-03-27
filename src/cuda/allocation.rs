@@ -1,65 +1,35 @@
 extern crate serde;
 extern crate serde_json;
 
-#[derive(Serialize, Deserialize)]
-struct AddressSpaceRaw {
-    #[serde(rename = "type")] ty: String,
-    initialized: String,
-}
+use std::cmp::Ordering;
 
-enum Type {
+#[derive(PartialEq, Eq)]
+pub enum AddressSpace {
     UVA,
 }
 
-#[derive(Serialize, Deserialize)]
-struct AddressSpace {
-    ty: String,
-    initialized: String,
-}
-
-#[derive(Serialize, Deserialize)]
-struct AllocationWrapperRaw {
-    allocation: Allocation,
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(PartialEq, Eq)]
 pub struct Allocation {
-    id: u64,
-    pos: u64,
-    size: u64,
+    pub id: u64,
+    pub pos: u64,
+    pub size: u64,
+    pub address_space: AddressSpace,
 }
 
-#[derive(Debug)]
-pub enum AllocationError {
-    JsonError(serde_json::Error),
+impl Allocation {
+    pub fn contains(&self, item: u64) -> bool {
+        return (item >= self.pos) && (item < self.pos + self.size);
+    }
 }
 
-type AllocationResult = Result<Allocation, serde_json::Error>;
-
-pub fn from_value(v: serde_json::Value) -> AllocationResult {
-    let awr: AllocationWrapperRaw = match serde_json::from_value(v) {
-        Ok(a) => a,
-        Err(e) => return Err(e),
-    };
-
-    let a = awr.allocation;
-
-    Ok(a)
+impl Ord for Allocation {
+    fn cmp(&self, other: &Allocation) -> Ordering {
+        self.pos.cmp(&other.pos)
+    }
 }
 
-#[test]
-fn allocation_test() {
-    use std::io::BufReader;
-    let data = r#"{"allocation":
-                    {"addrsp":{"type":"uva"},
-                    "id":69268689182064,
-                    "loc":{"id":0,"type":"cuda"},
-                    "mem":{"type":"pageable"},
-                    "pos":1099895410688,
-                    "size":2032}
-                }"#;
-    let mut reader = BufReader::new(data.as_bytes());
-    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let a: Allocation = from_value(v).unwrap();
-    assert_eq!(a.id, 69268689182064 as u64);
+impl PartialOrd for Allocation {
+    fn partial_cmp(&self, other: &Allocation) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
