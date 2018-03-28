@@ -10,14 +10,14 @@ use cuda::allocation::Allocation;
 use cuda::configured_call::ConfiguredCall;
 
 pub struct Thread {
-    pub current_device: u64,
+    pub device: u64,
     pub configured_call: ConfiguredCall,
 }
 
 impl Thread {
     pub fn new() -> Thread {
         Thread {
-            current_device: 0,
+            device: 0,
             configured_call: ConfiguredCall::new(),
         }
     }

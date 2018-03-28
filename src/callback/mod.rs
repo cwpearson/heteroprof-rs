@@ -50,6 +50,12 @@ pub struct CudaConfigureCallS {
 }
 );
 
+add_common_fields!(
+pub struct CudaSetDeviceS {
+    pub device: u64,
+}
+);
+
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
@@ -57,6 +63,7 @@ pub enum Record {
     #[serde(rename = "cudaMemcpy")] CudaMemcpy(CudaMemcpyS),
     #[serde(rename = "cudaSetupArgument")] CudaSetupArgument(CudaSetupArgumentS),
     #[serde(rename = "cudaConfigureCall")] CudaConfigureCall(CudaConfigureCallS),
+    #[serde(rename = "cudaSetDevice")] CudaSetDevice(CudaSetDeviceS),
 }
 
 type RecordResult = Result<Record, serde_json::Error>;
