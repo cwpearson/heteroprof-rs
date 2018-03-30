@@ -1,10 +1,14 @@
 extern crate petgraph;
 
-pub struct Edge {}
+#[derive(Clone, Copy, PartialOrd, PartialEq, Eq, Ord, Hash)]
+pub struct TransferS {
+    id: usize,
+}
 
-pub struct ComputeS {}
-
-pub struct TransferS {}
+#[derive(Clone, Copy, PartialOrd, PartialEq, Eq, Ord, Hash)]
+pub struct ComputeS {
+    id: usize,
+}
 
 impl petgraph::EdgeType for ComputeS {
     fn is_directed() -> bool {
@@ -20,23 +24,17 @@ impl petgraph::EdgeType for TransferS {
 
 impl TransferS {
     pub fn new() -> TransferS {
-        TransferS {}
+        TransferS { id: 0 }
     }
 }
 
-pub enum Edge2<'a> {
+impl ComputeS {
+    pub fn new() -> ComputeS {
+        ComputeS { id: 0 }
+    }
+}
+
+pub enum Edge<'a> {
     Compute(&'a ComputeS),
     Transfer(&'a TransferS),
-}
-
-impl petgraph::EdgeType for Edge {
-    fn is_directed() -> bool {
-        true
-    }
-}
-
-impl Edge {
-    pub fn new() -> Edge {
-        Edge {}
-    }
 }

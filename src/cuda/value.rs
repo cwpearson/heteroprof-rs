@@ -2,17 +2,15 @@
 pub struct Value {
     pos: u64,
     size: u64,
+    initialized: bool,
 }
 
 impl Value {
-    pub fn from_value(orig: &Value) -> Value {
-        Value::new(orig.pos, orig.size)
-    }
-
-    pub fn new(pos: u64, size: u64) -> Value {
+    pub fn new(pos: u64, size: u64, initialized: bool) -> Value {
         let v = Value {
             pos: pos,
             size: size,
+            initialized: initialized,
         };
         v
     }
@@ -24,9 +22,9 @@ pub struct Values {
 }
 
 impl Values {
-    pub fn new(pos: u64, size: u64) -> Values {
+    pub fn new_value(pos: u64, size: u64, initialized: bool) -> Values {
         Values {
-            latest: Value::new(pos, size),
+            latest: Value::new(pos, size, initialized),
         }
     }
 
@@ -34,7 +32,7 @@ impl Values {
         self.latest = Value::from_value(&self.latest)
     }
 
-    pub fn get(&self, pos: u64, size: u64) -> &Value {
+    pub fn get_containing(&self, pos: u64, size: u64) -> &Value {
         return &self.latest;
     }
 }

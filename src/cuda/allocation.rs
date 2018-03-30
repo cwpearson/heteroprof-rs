@@ -29,12 +29,18 @@ impl Allocation {
         return (item >= self.pos) && (item < self.pos + self.size);
     }
 
-    pub fn get_value(&self, pos: u64, size: u64) -> &Value {
-        return self.values.get(pos, size);
+    pub fn get_containing_value(&self, pos: u64, size: u64) -> Option<&Value> {
+        let latest = self.values.get_containing(pos, size);
+        return Some(latest);
     }
 
-    pub fn new_value(&mut self, pos: u64, size: u64) {
-        self.values.push(Value::new(pos, size))
+    pub fn get_exact_value(&self, pos: u64, size: u64) -> Option<&Value> {
+        let latest = self.values.get_containing(pos, size);
+        return Some(latest);
+    }
+
+    pub fn new_value(&mut self, pos: u64, size: u64, initialized: bool) {
+        self.values.new_value(pos, size, initialized);
     }
 }
 

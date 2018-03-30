@@ -2,9 +2,8 @@ extern crate petgraph;
 
 use self::petgraph::graphmap::DiGraphMap;
 use std::collections::{HashMap, HashSet};
-use pdg::edge::Edge2;
-use pdg::edge;
-use pdg::node::{ComputeS, Node, TransferS, ValueS};
+use pdg::edge::{ComputeS, Edge, TransferS};
+use pdg::node::{Node, ValueS};
 use Document;
 use callback;
 use cuda;
@@ -12,9 +11,9 @@ use cuda::allocation::{AddressSpace, Allocation};
 
 pub struct PDG<'a> {
     next_id: usize,
-    pub computes: HashSet<edge::ComputeS>,
-    pub transfers: HashSet<edge::TransferS>,
-    pub graph: DiGraphMap<Node, Edge2<'a>>,
+    pub computes: HashSet<ComputeS>,
+    pub transfers: HashSet<TransferS>,
+    pub graph: DiGraphMap<Node, Edge<'a>>,
 }
 
 impl<'a> PDG<'a> {
@@ -33,10 +32,10 @@ impl<'a> PDG<'a> {
         Node::Value(v)
     }
 
-    pub fn new_transfer(&mut self) -> Edge2 {
-        let e = edge::TransferS::new();
+    pub fn new_transfer(&mut self) -> Edge {
+        let e = TransferS::new();
         self.transfers.insert(e);
-        Edge2::Transfer(&e)
+        Edge::Transfer(&e)
     }
 }
 
@@ -84,7 +83,8 @@ fn handle_cuda_memcpy(cm: &callback::CudaMemcpyS, state: &mut cuda::State, pdg: 
     // find the current value
     let src_val = src_alloc.get_value(src_pos, src_size);
 
-    pdg.graph.add_edge(transfer, dst, Edge2::Transfer(transfer));
+    pdg.graph
+        .add_edge(src_val.clone(), dst, Edge::Transfer(transfer));
 
     // find the dst allocation
     let dst_pos = cm.dst;
