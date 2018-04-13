@@ -30,31 +30,50 @@ pub struct CudaConfigureCallS {
 
 add_common_fields!(
 pub struct CudnnActivationBackwardS {
+    pub input_vector: [u64; 10],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct CudnnActivationForwardS {
+    pub input_vector: [u64; 6],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct CudnnAddTensorS {
+    pub input_vector: [u64; 6],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct CudnnConvolutionBackwardBiasS {
+    pub input_vector: [u64; 5],
+    pub output_vector: [u64; 1],
+}
+);
+
+add_common_fields!(
+pub struct CudnnConvolutionBackwardDataS {
+    pub input_vector: [u64; 12],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct CudnnConvolutionBackwardFilterS {
+    pub input_vector: [u64; 12],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct CudnnConvolutionForwardS {
+    pub input_vector: [u64; 12],
+    pub output_vector: [u64; 1],
 }
 );
 
@@ -70,27 +89,32 @@ pub struct CudnnDestroyS {
 
 add_common_fields!(
 pub struct CudnnPoolingForwardS {
+    pub input_vector: [u64; 6],
+    pub output_vector: [u64; 1]
 }
 );
 
 add_common_fields!(
 pub struct CudnnSoftmaxForwardS {
+    pub input_vector: [u64; 7],
+    pub output_vector: [u64; 1]
 }
 );
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
-    #[serde(rename = "cudnnActivationBackward")] CublasCreate(CudnnActivationBackwardS),
-    #[serde(rename = "cudnnActivationForward")] CublasDestroy(CudnnActivationForwardS),
-    #[serde(rename = "cudnnAddTensor")] CublasDgemm(CudnnAddTensorS),
-    #[serde(rename = "cudnnConvolutionBackwardBias")] CublasDgemv(CudnnConvolutionBackwardBiasS),
-    #[serde(rename = "cudnnConvolutionBackwardFilter")] CublasSasum(CudnnConvolutionBackwardFilterS),
-    #[serde(rename = "cudnnConvolutionForward")] CublasSaxpy(CudnnConvolutionForwardS),
-    #[serde(rename = "cudnnCreate")] CublasSdot(CudnnCreateS),
-    #[serde(rename = "cudnnDestroy")] CublasSgemm(CudnnDestroyS),
-    #[serde(rename = "cudnnPoolingForward")] CublasSgemv(CudnnPoolingForwardS),
-    #[serde(rename = "cudnnSoftmaxForward")] CublasSscal(CudnnSoftmaxForwardS),   
+    #[serde(rename = "cudnnActivationBackward")] CudnnActivationBackward(CudnnActivationBackwardS),
+    #[serde(rename = "cudnnActivationForward")] CudnnActivationForward(CudnnActivationForwardS),
+    #[serde(rename = "cudnnAddTensor")] CudnnAddTensor(CudnnAddTensorS),
+    #[serde(rename = "cudnnConvolutionBackwardBias")] CudnnConvolutionBackwardBias(CudnnConvolutionBackwardBiasS),
+    #[serde(rename = "cudnnConvolutionBackwardData")] CudnnConvolutionBackwardData(CudnnConvolutionBackwardDataS),
+    #[serde(rename = "cudnnConvolutionBackwardFilter")] CudnnConvolutionBackwardFilter(CudnnConvolutionBackwardFilterS),
+    #[serde(rename = "cudnnConvolutionForward")] CudnnConvolutionForward(CudnnConvolutionForwardS),
+    #[serde(rename = "cudnnCreate")] CudnnCreate(CudnnCreateS),
+    #[serde(rename = "cudnnDestroy")] CudnnDestroy(CudnnDestroyS),
+    #[serde(rename = "cudnnPoolingForward")] CudnnPoolingForward(CudnnPoolingForwardS),
+    #[serde(rename = "cudnnSoftmaxForward")] CudnnSoftmaxForward(CudnnSoftmaxForwardS),   
 }
 
 #[test]
