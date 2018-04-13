@@ -2,6 +2,9 @@ pub mod pdg;
 mod activity;
 mod callback;
 mod cuda;
+mod cublas;
+mod cudnn;
+mod nccl;
 
 extern crate serde;
 #[macro_use]
