@@ -117,39 +117,39 @@ pub enum Record {
     #[serde(rename = "cudnnSoftmaxForward")] CudnnSoftmaxForward(CudnnSoftmaxForwardS),   
 }
 
-#[test]
-fn cublas_cublas_create_test() {
-    let data = r#"{"calling_tid":11358,
-    "cublas_handle":70368511725280,
-    "hprof_kind":"cublas","id":1,
-    "name":"cublasCreate",
-    "wall_end":1522732322551348279,
-    "wall_start":1522732322054381008}"#;
-    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let r: Record = from_value(v).unwrap();
-    match r {
-        Record::CublasCreate(s) => assert_eq!(s.id, 1 as u64),
-        _ => panic!("Expected a CudaSetupArgument!"),
-    }
-}
+// #[test]
+// fn cublas_cublas_create_test() {
+//     let data = r#"{"calling_tid":11358,
+//     "cublas_handle":70368511725280,
+//     "hprof_kind":"cublas","id":1,
+//     "name":"cublasCreate",
+//     "wall_end":1522732322551348279,
+//     "wall_start":1522732322054381008}"#;
+//     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
+//     let r: Record = from_value(v).unwrap();
+//     match r {
+//         Record::CublasCreate(s) => assert_eq!(s.id, 1 as u64),
+//         _ => panic!("Expected a CudaSetupArgument!"),
+//     }
+// }
 
-#[test]
-fn cublas_cublas_destroy_test() {
-     let data = r#"{"calling_tid":11358,
-     "handle":69269201188720,
-     "hprof_kind":"cublas",
-     "id":8,"input_vector":[],
-     "name":"cublasDestroy",
-     "output_vector":[],
-     "wall_end":1522732322554073510,
-     "wall_start":1522732322551483898}"#;
-    let v: serde_json::Value = serde_json::from_str(&data).unwrap();
-    let r: Record = from_value(v).unwrap();
-    match r {
-        Record::CublasDestroy(s) => assert_eq!(s.handle, 69269201188720 as u64),
-        _ => panic!("Expected a CudaSetupArgument!"),
-    }
-}
+// #[test]
+// fn cublas_cublas_destroy_test() {
+//      let data = r#"{"calling_tid":11358,
+//      "handle":69269201188720,
+//      "hprof_kind":"cublas",
+//      "id":8,"input_vector":[],
+//      "name":"cublasDestroy",
+//      "output_vector":[],
+//      "wall_end":1522732322554073510,
+//      "wall_start":1522732322551483898}"#;
+//     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
+//     let r: Record = from_value(v).unwrap();
+//     match r {
+//         Record::CublasDestroy(s) => assert_eq!(s.handle, 69269201188720 as u64),
+//         _ => panic!("Expected a CudaSetupArgument!"),
+//     }
+// }
 
 type RecordResult = Result<Record, serde_json::Error>;
 
