@@ -30,11 +30,15 @@ pub struct CudaConfigureCallS {
 
 add_common_fields!(
 pub struct NcclAllReduceS {
+    pub input_vector: [u64; 1],
+    pub output_vector: [u64; 1],
 }
 );
 
 add_common_fields!(
 pub struct NcclBcastS {
+    pub input_vector: [u64; 1],
+    pub output_vector: [u64; 1],
 }
 );
 
@@ -45,11 +49,15 @@ pub struct NcclCommDestroyS {
 
 add_common_fields!(
 pub struct NcclCommInitAllS {
+    pub gpu: u64,
+    pub nccl_comm: u64,
 }
 );
 
 add_common_fields!(
 pub struct NcclCommInitRankS {
+    pub gpu: u64,
+    pub nccl_comm :u64
 }
 );
 
