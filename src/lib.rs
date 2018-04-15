@@ -22,6 +22,9 @@ pub enum DecoderError {
 pub struct Document {
     activities: Vec<activity::Record>,
     apis: Vec<callback::Record>,
+    cudnn_calls: Vec<cudnn::Record>,
+    nccl_calls: Vec<nccl::Record>,
+    cublas_calls: Vec<cublas::Record>,
 }
 
 impl Document {
@@ -29,6 +32,9 @@ impl Document {
         return Document {
             activities: vec![],
             apis: vec![],
+            cudnn_calls: vec![],
+            nccl_calls: vec![],
+            cublas_calls: vec![],
         };
     }
 
@@ -53,6 +59,15 @@ impl Document {
     pub fn add_api(&mut self, r: callback::Record) {
         self.apis.push(r);
     }
+    pub fn add_cudnn(&mut self, r: cudnn::Record) {
+        self.cudnn_calls.push(r);
+    }
+    pub fn add_cublas(&mut self, r: cublas::Record) {
+        self.cublas_calls.push(r);
+    }
+    pub fn add_nccl(&mut self, r: nccl::Record) {
+        self.nccl_calls.push(r);
+    }
 }
 
 type DecoderResult<T> = Result<T, DecoderError>;
@@ -72,16 +87,38 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Docum
 
         if let serde_json::Value::Object(obj) = kind_check_val {
             if let Some(kind) = obj.get("hprof_kind") {
-                if kind.as_str().unwrap() == "cupti_callback" {
-                    if let Ok(a) = callback::from_value(val.take()) {
-                        doc.add_api(a);
-                        continue;
+                match kind.as_str().unwrap() {
+                    "cupti_callback" => {
+                        if let Ok(a) = callback::from_value(val.take()) {
+                            doc.add_api(a);
+                            continue;
+                        }
                     }
-                } else if kind == "cupti_activity" {
-                    if let Ok(a) = activity::from_value(val.take()) {
-                        doc.add_activity(a);
-                        continue;
+                    "cupti_activity" => {
+                        if let Ok(a) = activity::from_value(val.take()) {
+                            doc.add_activity(a);
+                            continue;
+                        }
                     }
+                    "cudnn" => {
+                        if let Ok(a) = cudnn::from_value(val.take()) {
+                            doc.add_cudnn(a);
+                            continue;
+                        }
+                    }
+                    "cublas" => {
+                        if let Ok(a) = cublas::from_value(val.take()) {
+                            doc.add_cublas(a);
+                            continue;
+                        }
+                    }
+                    "nccl" => {
+                        if let Ok(a) = nccl::from_value(val.take()) {
+                            doc.add_nccl(a);
+                            continue;
+                        }
+                    }
+                    _ => {}
                 }
             }
         }
