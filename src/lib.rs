@@ -5,6 +5,8 @@ mod cuda;
 mod cublas;
 mod cudnn;
 mod nccl;
+// mod statistics;
+mod document;
 
 extern crate serde;
 #[macro_use]
@@ -19,17 +21,9 @@ pub enum DecoderError {
     JsonError(serde_json::Error),
 }
 
-pub struct Document {
-    activities: Vec<activity::Record>,
-    apis: Vec<callback::Record>,
-    cudnn_calls: Vec<cudnn::Record>,
-    nccl_calls: Vec<nccl::Record>,
-    cublas_calls: Vec<cublas::Record>,
-}
-
-impl Document {
-    fn new() -> Document {
-        return Document {
+impl document::Document {
+    fn new() -> document::Document {
+        return document::Document {
             activities: vec![],
             apis: vec![],
             cudnn_calls: vec![],
@@ -72,8 +66,8 @@ impl Document {
 
 type DecoderResult<T> = Result<T, DecoderError>;
 
-pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<Document> {
-    let mut doc = Document::new();
+pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<document::Document> {
+    let mut doc = document::Document::new();
 
     let stream = serde_json::Deserializer::from_reader(br).into_iter::<serde_json::Value>();
 
@@ -147,6 +141,6 @@ fn document_test() {
 {"completed":0,"correlation_id":236,"cuda_device_id":0,"duration":162658,"hprof_kind":"cupti_activity","kind":"cupti_kernel3","name":"_Z13matrixMulCUDAILi32EEvPfS0_S0_ii","start":1522123362756379265,"stream_id":7}
 "#;
     let mut reader = BufReader::new(data.as_bytes());
-    let doc: Document = decode_document(&mut reader).unwrap();
+    let doc: document::Document = decode_document(&mut reader).unwrap();
     assert_eq!(doc.apis.len(), 7);
 }

@@ -3,12 +3,12 @@ extern crate petgraph;
 use self::petgraph::graphmap::DiGraphMap;
 use pdg::edge::Edge;
 use pdg::compute::Compute;
-use Document;
 use pdg::transfer::Transfer;
 use std::collections::HashMap;
 use callback;
 use cuda;
 use cuda::allocation::{AddressSpace, Allocation};
+pub use document::Document;
 
 pub struct PDG {
     next_id: u64,
