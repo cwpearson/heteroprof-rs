@@ -5,7 +5,7 @@ mod cuda;
 mod cublas;
 mod cudnn;
 mod nccl;
-// mod statistics;
+mod statistics;
 mod document;
 
 extern crate serde;
