@@ -4,11 +4,34 @@ use document;
 use std::collections::HashMap;
 use std::hash::Hash;
 
+use self::MemoryTransferSizes::*;
+use std::slice::Iter;
+
+use callback::Record;
+
+//Talk to Carl what these sizes should be, in terms of what would be most useful for analysis.
+#[derive(Debug, Hash, PartialEq, Copy, Clone)]
+pub enum MemoryTransferSizes {
+    ZeroToFiftyMB,
+    FiftyToOneHundredMB,
+    OverOneHundredMB,
+}
+
+impl Eq for MemoryTransferSizes {}
+
+impl MemoryTransferSizes {
+    pub fn iterator() -> Iter<'static, MemoryTransferSizes> {
+        static MEMORYTRANSFERSIZES: [MemoryTransferSizes; 3] =
+            [ZeroToFiftyMB, FiftyToOneHundredMB, OverOneHundredMB];
+        MEMORYTRANSFERSIZES.into_iter()
+    }
+}
+
 pub struct Histogram<EnumType>
 where
-    EnumType: Eq + Hash,
+    EnumType: Eq + Hash + 'static,
 {
-    keys: EnumType,
+    keys: Iter<'static, EnumType>,
     value_hashed: HashMap<EnumType, u64>,
 }
 
@@ -16,10 +39,10 @@ impl<EnumType> Histogram<EnumType>
 where
     EnumType: Eq + Hash,
 {
-    fn new(initial_keys: EnumType, hash_map: HashMap<EnumType, u64>) -> Histogram<EnumType> {
+    fn new(keys: Iter<'static, EnumType>) -> Histogram<EnumType> {
         return Histogram {
-            keys: initial_keys,
-            value_hashed: hash_map,
+            keys: keys,
+            value_hashed: HashMap::<EnumType, u64>::new(),
         };
     }
 
@@ -45,11 +68,26 @@ pub struct DocumentStatistics {
 }
 
 impl DocumentStatistics {
-    fn new(doc: document::Document) -> DocumentStatistics {
+    pub fn new(doc: document::Document) -> DocumentStatistics {
         return DocumentStatistics { doc: doc };
     }
 
-    pub fn memory_transfer_statistics() {}
+    pub fn memory_transfer_statistics(&self) {
+        let mut memory_histogram: Histogram<MemoryTransferSizes> =
+            Histogram::new(MemoryTransferSizes::iterator());
+
+        for callback_iter in &self.doc.apis {
+            match callback_iter {
+                &Record::CudaMemcpy(ref s) => {
+                    let ref y = s.count;
+                    println!("{}", y);
+                }
+                _ => {
+                    //Don't need to do anything, as we are only interested in memory transfers
+                }
+            }
+        }
+    }
 
     pub fn kernel_statistics() {}
 }
