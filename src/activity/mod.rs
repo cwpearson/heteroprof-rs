@@ -3,15 +3,35 @@
 extern crate serde;
 extern crate serde_json;
 
-#[derive(Serialize, Deserialize)]
-pub struct Kernel3S {
-    stream_id: u64,
+macro_rules! add_common_fields {
+    (pub struct $name:ident { $( pub $field:ident: $ty:ty ),* $(,)* }) => {
+        #[derive(Serialize, Deserialize)]
+        pub struct $name {
+            pub correlation_id: u64,
+            pub cuda_device_id: u64,
+            pub dur: u64,
+            pub start: u64,
+            pub stream_id: u64,
+            $( pub $field: $ty ),*
+        }
+    };
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct MemcpyS {
-    src_kind: String,
+add_common_fields!(
+pub struct Kernel3S {
+    pub completed: u64,
+    pub name: String,
 }
+);
+
+add_common_fields!(
+pub struct MemcpyS {
+    pub src_kind: String,
+    pub dst_kind:  String,    
+    pub cuda_memcpy_kind: String,
+    pub runtime_correlation_id: u64,
+}
+);
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "kind")]
@@ -37,7 +57,7 @@ fn kernel3_test() {
         "completed":0,
         "correlation_id":211,
         "cuda_device_id":0,
-        "duration":164290,
+        "dur":164290,
         "hprof_kind":"cupti_activity",
         "kind":"cupti_kernel3",
         "name":"_Z13matrixMulCUDAILi32EEvPfS0_S0_ii",
@@ -54,17 +74,18 @@ fn kernel3_test() {
 #[test]
 fn memcpy_test() {
     let data = r#"{
-        "correlation_id":203,
-        "cuda_device_id":0,
-        "cuda_memcpy_kind":"htod",
-        "dst_kind":"device",
-        "duration":35040,
-        "hprof_kind":"cupti_activity",
-        "kind":"cupti_memcpy",
-        "runtime_correlation_id":0,
-        "src_kind":"pageable",
-        "start":1522123362755091634,
-        "stream_id":7}"#;
+        "correlation_id": 744,
+        "cuda_device_id": 0,
+        "cuda_memcpy_kind": "htod",
+        "dst_kind": "device",
+        "dur": 0,
+        "hprof_kind": "cupti_activity",
+        "kind": "cupti_memcpy",
+        "runtime_correlation_id": 0,
+        "src_kind": "pageable",
+        "start": 0,
+        "stream_id": 7
+    }"#;
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
     let r: Record = from_value(v).unwrap();
     match r {

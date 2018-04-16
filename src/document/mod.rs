@@ -1,11 +1,10 @@
-// pub mod pdg;
+use pdg;
 use activity;
 use callback;
 use cuda;
 use cublas;
 use cudnn;
 use nccl;
-use std::io::BufRead;
 
 pub struct Document {
     pub activities: Vec<activity::Record>,

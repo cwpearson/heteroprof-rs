@@ -2,6 +2,8 @@ extern crate serde;
 extern crate serde_json;
 
 use std::cmp::Ordering;
+use callback;
+use activity;
 
 #[derive(Serialize, Deserialize)]
 struct ComputeRaw {
@@ -15,7 +17,7 @@ pub struct Compute {
     pub kind: String,
     pub name: String,
     pub start: f64,
-    pub dur: f64,
+    pub duration: f64,
     pub completed: f64,
     pub stream_id: u64,
 }
@@ -42,6 +44,38 @@ pub fn from_value(v: serde_json::Value) -> ComputeResult {
     Ok(r.compute)
 }
 
+// pub fn from_callback(v: &callback::Record) {
+//     match v {
+//         &callback::Record::CudaMalloc(ref s) => {
+//             //Do logic for a new allocation
+//             let mut r = Compute {
+//                 correlation_id: s.correlation_id,
+//                 cuda_device_id: s.cuda_device_id,
+//                 kind: s.kind,
+//                 name: s.name,
+//                 start: s.start,
+//                 duration: s.end,
+//                 completed: 1,
+//                 stream_id: s.stream_id,
+//             };
+//         }
+//         _ => {
+//             //Don't need to do anything, as we are only interested in memory transfers
+//         }
+//     }
+// }
+
+// pub fn from_activity(v: &activity::Record) {
+//     match v {
+//         &activity::Record::Kernel3(ref s) => {
+//             //Do something for a kernel launch
+//         }
+//         _ => {
+//             //Uhhhhh
+//         }
+//     }
+// }
+
 #[test]
 fn api_test() {
     use std::io::BufReader;
@@ -49,7 +83,7 @@ fn api_test() {
                 {"completed":0.0,
                 "correlation_id":1858,
                 "cuda_device_id":0,
-                "dur":2112.0,
+                "duration":2112.0,
                 "kind":"cupti_kernel3",
                 "kv":{},"name":"_ZN7mshadow4cuda13MapPlanKernelINS_2sv6savetoELi8ENS_4expr4PlanINS_6TensorINS_3gpuELi2EfEEfEENS5_INS4_9ScalarExpIfEEfEEEEvT1_jNS_5ShapeILi2EEET2_",
                 "start":1.5217442345660603e+18,

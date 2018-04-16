@@ -6,6 +6,7 @@ use pdg::compute::Compute;
 use pdg::transfer::Transfer;
 use std::collections::HashMap;
 use callback;
+use activity;
 use cuda;
 use cuda::allocation::{AddressSpace, Allocation};
 pub use document::Document;
@@ -59,7 +60,11 @@ fn handle_cuda_setup_argument(
     state
 }
 
-fn handle_cuda_memcpy(cm: &callback::CudaMemcpyS, mut state: cuda::State) -> cuda::State {
+fn handle_cuda_memcpy(
+    graph: &mut PDG,
+    cm: &callback::CudaMemcpyS,
+    mut state: cuda::State,
+) -> cuda::State {
     // find the src allocation
     let src_pos = cm.src;
     let src_size = cm.count;
@@ -68,21 +73,90 @@ fn handle_cuda_memcpy(cm: &callback::CudaMemcpyS, mut state: cuda::State) -> cud
         let mut iter = state.allocations.iter();
 
         let src_alloc = match iter.find(|&a| a.contains(src_pos)) {
-            Some(alloc) => alloc,
-            _ => panic!("ahh"),
+            Some(alloc) => {
+                println!("Src found!");
+                Some(alloc)
+            }
+            _ => {
+                println!("Src not found!");
+                None
+            }
         };
-
-        // src_alloc.get(src_pos, src_size) // get a Value at src_pos, src_size
     }
 
+    {
+        let mut iter = state.allocations.iter();
+
+        let dst_alloc = match iter.find(|&a| a.contains(dst_pos)) {
+            Some(alloc) => {
+                println!("Dst found!");
+                Some(alloc)
+            }
+            _ => {
+                println!("Dst not found!");
+                None
+            }
+        };
+    }
+
+    let memcpy_kind = match cm.cuda_memcpy_kind {
+        0 => String::from("cudaMemcpyHostToHost"),
+        1 => String::from("cudaMemcpyHostToDevice"),
+        2 => String::from("cudaMemcpyDeviceToHost"),
+        3 => String::from("cudaMemcpyDeviceToDevice"),
+        _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
+    };
+    let duration = cm.wall_end - cm.wall_start;
+    //We cannot get all information from callback, need to combine it with activity
+    let transfer = &Transfer {
+        correlation_id: cm.correlation_id,
+        cuda_device_id: 50,
+        kind: memcpy_kind,
+        start: cm.wall_start,
+        dur: duration,
+        stream_id: 1,
+    };
+    graph.add_transfer(transfer);
     // find the dst allocation
     state
 }
+
+fn handle_memcpy_activity(
+    graph: &mut PDG,
+    cm: &activity::MemcpyS,
+    mut state: cuda::State,
+) -> cuda::State {
+    // let src_pos = cm.src;
+    // let src_size = cm.count;
+    // let dst_pos = cm.dst;
+    // {
+    //     let mut iter = state.allocations.iter();
+
+    //     let src_alloc = match iter.find(|&a| a.contains(src_pos)) {
+    //         Some(alloc) => alloc,
+    //         _ => panic!("ahh"),
+    //     };
+    // }
+
+    // {
+    //     let mut iter = state.allocations.iter();
+
+    //     let dst_alloc = match iter.find(|&a| a.contains(dst_pos)) {
+    //         Some(alloc) => alloc,
+    //         _ => panic!("ahhh"),
+    //     };
+    // }
+    state
+}
+
+/*
+    This is where we want to build the dependence graph for allocations etc.
+*/
 pub fn from_document(doc: &Document) -> PDG {
     let mut state = cuda::State::new();
-    let pdg = PDG::new();
+    let mut pdg = PDG::new();
 
-    // First pass: set up allocations
+    // Do first pass through all APIs
     for api in doc.apis() {
         use callback::Record::*;
         match api {
@@ -90,14 +164,6 @@ pub fn from_document(doc: &Document) -> PDG {
                 state = handle_cuda_malloc(m, state);
                 println!("{} allocations", state.allocations.len());
             }
-            _ => (),
-        }
-    }
-
-    // Second pass: set up values from kernels / memcopies
-    for api in doc.apis() {
-        use callback::Record::*;
-        match api {
             &CudaConfigureCall(ref cc) => {
                 state = handle_cuda_configure_call(cc, state);
             }
@@ -105,9 +171,30 @@ pub fn from_document(doc: &Document) -> PDG {
                 state = handle_cuda_setup_argument(sa, state);
             }
             &CudaMemcpy(ref m) => {
-                state = handle_cuda_memcpy(m, state);
+                state = handle_cuda_memcpy(&mut pdg, m, state);
             }
             _ => (),
+        }
+    }
+
+    for activity in doc.activities() {
+        use activity::Record::*;
+        match activity {
+            &Kernel3(ref m) => {
+                //Handle kernel launch activity
+            }
+            &Memcpy(ref m) => {
+                //Handle memcpy activity
+                state = handle_memcpy_activity(&mut pdg, m, state);
+            }
+            _ => panic!("Unexpected activity encountered!"),
+        }
+    }
+
+    for cudnn_call in doc.cudnn_calls() {
+        use cudnn::Record::*;
+        match cudnn_call {
+            _ => panic!("Unexpected cudnn activity encountered!"),
         }
     }
 
