@@ -9,8 +9,17 @@ use callback;
 use activity;
 use cuda;
 use cuda::allocation::{AddressSpace, Allocation};
+use cuda::value;
 pub use document::Document;
+use std::rc::Rc;
 
+//Values as nodes and then computes and tranfsers as edges
+/*
+With cudaLaucn you do cudaConfigureCall and cudaSetupArguments
+Do a memcpy and it is an allocation that I can't find, good idea to generate an allocation that is on the host, maybe a warning and print it to standardError. 
+
+Graph get edges in constant time
+*/
 pub struct PDG {
     next_id: u64,
     pub edges: DiGraphMap<u64, Edge>,
@@ -33,13 +42,14 @@ impl PDG {
 }
 
 fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cuda::State {
-    let allocation = Allocation {
+    let allocation = Rc::new(Allocation {
         id: 0,
         pos: cm.ptr,
         size: cm.size,
         address_space: AddressSpace::UVA,
-    };
-    state.allocations.insert(allocation);
+    });
+    state.allocations.insert(Rc::clone(&allocation));
+    let val_result = value::val_from_malloc(cm, &allocation);
     state
 }
 

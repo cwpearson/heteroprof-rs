@@ -8,6 +8,7 @@ use std::ops::{Index, IndexMut};
 use std::ops::Range;
 use cuda::allocation::Allocation;
 use cuda::configured_call::ConfiguredCall;
+use std::rc::Rc;
 
 pub struct Thread {
     pub current_device: u64,
@@ -25,7 +26,7 @@ impl Thread {
 
 pub struct State {
     pub threads: HashMap<u64, Thread>,
-    pub allocations: BTreeSet<Allocation>,
+    pub allocations: BTreeSet<Rc<Allocation>>,
 }
 
 impl State {

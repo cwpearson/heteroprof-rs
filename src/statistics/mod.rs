@@ -1,3 +1,14 @@
+/*
+Histogram of allocation sizes
+Total number of bytes in each bucket
+
+For the kernel launches we should do a histogram of runtimes
+Keep track of each unique kernel, where there is a bin per each kernel
+
+Cool to keep track of per device how many kernels are running on there, and how long
+they are running for.
+ */
+
 use document;
 
 //Necessary for hash map
