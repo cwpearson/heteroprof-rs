@@ -7,6 +7,7 @@ use std::collections::{BTreeSet, HashMap};
 use std::ops::{Index, IndexMut};
 use std::ops::Range;
 use cuda::allocation::Allocation;
+use cuda::value::Value;
 use cuda::configured_call::ConfiguredCall;
 use std::rc::Rc;
 
@@ -27,6 +28,7 @@ impl Thread {
 pub struct State {
     pub threads: HashMap<u64, Thread>,
     pub allocations: BTreeSet<Rc<Allocation>>,
+    pub values: BTreeSet<Rc<Value>>,
 }
 
 impl State {

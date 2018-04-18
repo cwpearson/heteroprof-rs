@@ -17,6 +17,7 @@ pub struct Value {
     ptr: u64,
     size: u64,
     allocation: Rc<allocation::Allocation>,
+    times_modified: u64,
 }
 
 type ValueResult = Result<Value, serde_json::Error>;
@@ -43,6 +44,7 @@ pub fn val_from_malloc(v: &callback::CudaMallocS, alloc: &Rc<allocation::Allocat
         ptr: v.ptr,
         size: v.size,
         allocation: Rc::clone(alloc),
+        times_modified: 1,
     };
 
     awr

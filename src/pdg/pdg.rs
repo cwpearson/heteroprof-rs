@@ -1,3 +1,4 @@
+extern crate cuckoofilter;
 extern crate petgraph;
 
 use self::petgraph::graphmap::DiGraphMap;
@@ -20,6 +21,9 @@ Do a memcpy and it is an allocation that I can't find, good idea to generate an 
 
 Graph get edges in constant time
 */
+
+thread_local!(static filter_set: cuckoofilter = cuckoofilter::new());
+
 pub struct PDG {
     next_id: u64,
     pub edges: DiGraphMap<u64, Edge>,
@@ -49,7 +53,10 @@ fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cud
         address_space: AddressSpace::UVA,
     });
     state.allocations.insert(Rc::clone(&allocation));
-    let val_result = value::val_from_malloc(cm, &allocation);
+
+    //An entire allocation may not be completely dedicated to one Value.
+    //This is not correct!
+    // let val_result = value::val_from_malloc(cm, &allocation);
     state
 }
 
@@ -79,7 +86,37 @@ fn handle_cuda_memcpy(
     let src_pos = cm.src;
     let src_size = cm.count;
     let dst_pos = cm.dst;
-    {
+
+    //Identify what type of memory copy that it is
+    let memcpy_kind = match cm.cuda_memcpy_kind {
+        0 => String::from("cudaMemcpyHostToHost"),
+        1 => String::from("cudaMemcpyHostToDevice"),
+        2 => String::from("cudaMemcpyDeviceToHost"),
+        3 => String::from("cudaMemcpyDeviceToDevice"),
+        _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
+    };
+
+    let src_success = filter_set.contains(src_pos);
+    let dst_success = filter_set.contains(dst_pos);
+
+    if (!src_success) {
+        //Create a new value for the source, as it has not been seen before
+        match cm.cuda_memcpy_kind {
+            //Decide on what behaviour to exhibit depending on memcpy_kind
+            0 => {
+                //Will probably never be seeing this
+            }
+            1 => {
+                //Create a value on the host -- for now do nothing
+            }
+            2 => {
+                //This should also be rare
+            }
+            3 => {
+                //Fill in later
+            }
+        }
+    } else {
         let mut iter = state.allocations.iter();
 
         let src_alloc = match iter.find(|&a| a.contains(src_pos)) {
@@ -94,7 +131,24 @@ fn handle_cuda_memcpy(
         };
     }
 
-    {
+    if (!dst_success) {
+        //Create a new value for the destination
+        match cm.cuda_memcpy_kind {
+            //Decide on what behaviour to exhibit depending on memcpy_kind
+            0 => {
+                //Will probably never be seeing this
+            }
+            1 => {
+                //Create a value on the Device
+            }
+            2 => {
+                //Create a value on the host -- for now do nothing
+            }
+            3 => {
+                //Fill in later
+            }
+        }
+    } else {
         let mut iter = state.allocations.iter();
 
         let dst_alloc = match iter.find(|&a| a.contains(dst_pos)) {
@@ -109,14 +163,13 @@ fn handle_cuda_memcpy(
         };
     }
 
-    let memcpy_kind = match cm.cuda_memcpy_kind {
-        0 => String::from("cudaMemcpyHostToHost"),
-        1 => String::from("cudaMemcpyHostToDevice"),
-        2 => String::from("cudaMemcpyDeviceToHost"),
-        3 => String::from("cudaMemcpyDeviceToDevice"),
-        _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
-    };
+    //This should theoretically be switched to values
+    {}
+
+    {}
+
     let duration = cm.wall_end - cm.wall_start;
+
     //We cannot get all information from callback, need to combine it with activity
     let transfer = &Transfer {
         correlation_id: cm.correlation_id,
