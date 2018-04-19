@@ -42,26 +42,32 @@ impl State {
     pub fn update_allocations(&mut self, allocation_start: u64, allocation_size: u64) {
         let mut iter = self.allocations.iter();
 
-        let mut alloc = match iter.find(|&a| a.contains(allocation_start)) {
-            Some(alloc) => {
+        //let mut alloc =
+        match iter.find(|&a| a.contains(allocation_start)) {
+            Some(v) => {
                 println!("Allocation found!");
-                Some(alloc)
+                v.value_occupied(allocation_start, allocation_size);
+                // Some(v)
             }
             _ => {
                 println!("Allocation not found!");
-                None
+                // None
             }
-        };
+        } //;
 
-        let mut alloc_mut = alloc.as_mut();
-        match alloc_mut {
-            Some(v) => {
-                v.value_occupied(allocation_start, allocation_size);
-            }
-            None => {
-                //Do nothing
-            }
-        }
+        // let mut alloc_mut = alloc.as_mut();
+        // let mut hi = match alloc_mut {
+        //     Some(v) => {
+        //         v = v.get_mut();
+        //         let mut z = Rc::get_mut(&mut v);
+        //         if let Some(z) = z {
+        //             z.value_occupied(allocation_start, allocation_size);
+        //         }
+        //     }
+        //     None => {
+        //         //Do nothing
+        //     }
+        // }
     }
 }
 
