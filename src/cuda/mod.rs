@@ -28,7 +28,7 @@ impl Thread {
 pub struct State {
     pub threads: HashMap<u64, Thread>,
     pub allocations: BTreeSet<Rc<Allocation>>,
-    pub values: BTreeSet<Rc<Value>>,
+    // pub values: BTreeSet<Rc<Value>>,
 }
 
 impl State {
@@ -36,6 +36,31 @@ impl State {
         State {
             threads: HashMap::new(),
             allocations: BTreeSet::new(),
+        }
+    }
+
+    pub fn update_allocations(&mut self, allocation_start: u64, allocation_size: u64) {
+        let mut iter = self.allocations.iter();
+
+        let mut alloc = match iter.find(|&a| a.contains(allocation_start)) {
+            Some(alloc) => {
+                println!("Allocation found!");
+                Some(alloc)
+            }
+            _ => {
+                println!("Allocation not found!");
+                None
+            }
+        };
+
+        let mut alloc_mut = alloc.as_mut();
+        match alloc_mut {
+            Some(v) => {
+                v.value_occupied(allocation_start, allocation_size);
+            }
+            None => {
+                //Do nothing
+            }
         }
     }
 }

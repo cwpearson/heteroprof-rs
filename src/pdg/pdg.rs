@@ -1,7 +1,9 @@
 extern crate cuckoofilter;
+extern crate interval;
 extern crate petgraph;
 
 use self::petgraph::graphmap::DiGraphMap;
+use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use pdg::edge::Edge;
 use pdg::compute::Compute;
 use pdg::transfer::Transfer;
@@ -21,8 +23,10 @@ Do a memcpy and it is an allocation that I can't find, good idea to generate an 
 
 Graph get edges in constant time
 */
-
-thread_local!(static filter_set: cuckoofilter = cuckoofilter::new());
+/*
+What to do if a large value is then split into multiple small values, but a portion of it remains
+untouched
+*/
 
 pub struct PDG {
     next_id: u64,
@@ -46,17 +50,18 @@ impl PDG {
 }
 
 fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cuda::State {
+    //rustc says there is an error here, however no issues
+    let set = vec![(0, 0)].to_interval_set();
+
     let allocation = Rc::new(Allocation {
         id: 0,
         pos: cm.ptr,
         size: cm.size,
         address_space: AddressSpace::UVA,
+        space_occupied: set,
     });
     state.allocations.insert(Rc::clone(&allocation));
 
-    //An entire allocation may not be completely dedicated to one Value.
-    //This is not correct!
-    // let val_result = value::val_from_malloc(cm, &allocation);
     state
 }
 
@@ -96,77 +101,57 @@ fn handle_cuda_memcpy(
         _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
     };
 
-    let src_success = filter_set.contains(src_pos);
-    let dst_success = filter_set.contains(dst_pos);
+    let src_success = false; //filter_set.contains(src_pos);
+    let dst_success = false; //filter_set.contains(dst_pos);
 
-    if (!src_success) {
-        //Create a new value for the source, as it has not been seen before
-        match cm.cuda_memcpy_kind {
-            //Decide on what behaviour to exhibit depending on memcpy_kind
-            0 => {
-                //Will probably never be seeing this
-            }
-            1 => {
-                //Create a value on the host -- for now do nothing
-            }
-            2 => {
-                //This should also be rare
-            }
-            3 => {
-                //Fill in later
-            }
-        }
-    } else {
-        let mut iter = state.allocations.iter();
+    // if (!src_success) {
+    //     //Create a new value for the source, as it has not been seen before
+    //     match cm.cuda_memcpy_kind {
+    //         //Decide on what behaviour to exhibit depending on memcpy_kind
+    //         0 => {
+    //             //Will probably never be seeing this
+    //         }
+    //         1 => {
+    //             //Create a value on the host -- for now do nothing
+    //         }
+    //         2 => {
+    //             //This should also be rare
+    //         }
+    //         3 => {
+    //             //Fill in later
+    //         }
 
-        let src_alloc = match iter.find(|&a| a.contains(src_pos)) {
-            Some(alloc) => {
-                println!("Src found!");
-                Some(alloc)
-            }
-            _ => {
-                println!("Src not found!");
-                None
-            }
-        };
-    }
+    //         _ => {
+    //             panic!("This should never happen, input file may be corrupted");
+    //         }
+    //     }
+    // } else {
+    // }
 
-    if (!dst_success) {
-        //Create a new value for the destination
-        match cm.cuda_memcpy_kind {
-            //Decide on what behaviour to exhibit depending on memcpy_kind
-            0 => {
-                //Will probably never be seeing this
-            }
-            1 => {
-                //Create a value on the Device
-            }
-            2 => {
-                //Create a value on the host -- for now do nothing
-            }
-            3 => {
-                //Fill in later
-            }
-        }
-    } else {
-        let mut iter = state.allocations.iter();
+    // if (!dst_success) {
+    //     //Create a new value for the destination
+    //     match cm.cuda_memcpy_kind {
+    //         //Decide on what behaviour to exhibit depending on memcpy_kind
+    //         0 => {
+    //             //Will probably never be seeing this
+    //         }
+    //         1 => {
+    //             //Create a value on the Device
+    //         }
+    //         2 => {
+    //             //Create a value on the host -- for now do nothing
+    //         }
+    //         3 => {
+    //             //Fill in later
+    //         }
+    //         _ => {
+    //             panic!("This should never happen, input file may be corrupted");
+    //         }
+    //     }
+    // } else {
 
-        let dst_alloc = match iter.find(|&a| a.contains(dst_pos)) {
-            Some(alloc) => {
-                println!("Dst found!");
-                Some(alloc)
-            }
-            _ => {
-                println!("Dst not found!");
-                None
-            }
-        };
-    }
-
-    //This should theoretically be switched to values
-    {}
-
-    {}
+    state.update_allocations(cm.src, cm.count);
+    state.update_allocations(cm.dst, cm.count);
 
     let duration = cm.wall_end - cm.wall_start;
 
@@ -180,7 +165,6 @@ fn handle_cuda_memcpy(
         stream_id: 1,
     };
     graph.add_transfer(transfer);
-    // find the dst allocation
     state
 }
 
