@@ -3,10 +3,13 @@ extern crate interval;
 extern crate serde;
 extern crate serde_json;
 
-use std::cmp::Ordering;
+use std::cmp::{Eq, Ordering, PartialEq};
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::gcollections::ops::set::{Intersection, Union};
 use self::gcollections::ops::cardinality::IsEmpty;
+use std::collections::HashMap;
+use cuda::value::Value;
+use std::rc::Rc;
 
 #[derive(PartialEq, Eq)]
 pub enum AddressSpace {
@@ -20,6 +23,7 @@ pub struct Allocation {
     pub size: u64,
     pub address_space: AddressSpace,
     pub space_occupied: IntervalSet<u64>,
+    pub values: HashMap<(u64, u64), Rc<Value>>,
 }
 
 impl Allocation {
@@ -27,13 +31,22 @@ impl Allocation {
         return (item >= self.pos) && (item < self.pos + self.size);
     }
 
-    pub fn value_occupied(&self, id: u64, ptr: u64, item_size: u64) {
+    pub fn value_occupied(&mut self, id: u64, ptr: u64, item_size: u64) {
         //This may need to be divided by four to be correct, I can't remember how pointers work
         let temp_set = vec![(ptr, ptr + item_size)].to_interval_set();
         let intersection = self.space_occupied.intersection(&temp_set);
         if intersection.is_empty() {
             //All good, create away
             self.space_occupied.union(&temp_set);
+            let temp_allocation = Rc::from(self);
+            let temp_val = Value {
+                id: id,
+                ptr: ptr,
+                size: item_size,
+                allocation: temp_allocation,
+                times_modified: 0,
+            };
+            self.values.insert((ptr, item_size), Rc::from(temp_val));
         } else {
             //Handle the intersection gracefully
         }
@@ -51,3 +64,6 @@ impl PartialOrd for Allocation {
         Some(self.cmp(other))
     }
 }
+
+// impl Eq for Rc<Value> {}
+//

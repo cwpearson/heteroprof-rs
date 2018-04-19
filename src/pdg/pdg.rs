@@ -59,6 +59,7 @@ fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cud
         size: cm.size,
         address_space: AddressSpace::UVA,
         space_occupied: set,
+        values: HashMap::new(),
     });
     state.allocations.insert(Rc::clone(&allocation));
 

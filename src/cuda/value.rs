@@ -5,22 +5,23 @@ use cuda::allocation;
 use std::rc::Rc;
 use cuda::allocation::{AddressSpace, Allocation};
 use std;
+use std::cmp::{Eq, Ordering, PartialEq};
 
 // #[derive(Serialize, Deserialize)]
-struct ValueRaw {
-    value: Value,
-}
+// struct ValueRaw {
+//     value: Value,
+// }
 
 // #[derive(Serialize, Deserialize)]
 pub struct Value {
-    id: u64,
-    ptr: u64,
-    size: u64,
-    allocation: Rc<allocation::Allocation>,
-    times_modified: u64,
+    pub id: u64,
+    pub ptr: u64,
+    pub size: u64,
+    pub allocation: Rc<&'a allocation::Allocation>,
+    pub times_modified: u64,
 }
 
-type ValueResult = Result<Value, serde_json::Error>;
+// type ValueResult = Result<Value, serde_json::Error>;
 
 // pub fn from_value(v: serde_json::Value) -> ValueResult {
 //     let awr: ValueRaw = match serde_json::from_value(v) {
@@ -88,3 +89,14 @@ fn value_from_malloc_test() {
 //     let a: Allocation = from_value(v).unwrap();
 //     assert_eq!(a.id, 69268689182064 as u64);
 // }
+impl PartialEq for Value {
+    fn eq(&self, other: &Value) -> bool {
+        if (self.id == other.id) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+}
+
+impl Eq for Value {}
