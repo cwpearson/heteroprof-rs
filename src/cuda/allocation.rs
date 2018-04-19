@@ -27,7 +27,7 @@ impl Allocation {
         return (item >= self.pos) && (item < self.pos + self.size);
     }
 
-    pub fn value_occupied(&self, ptr: u64, item_size: u64) {
+    pub fn value_occupied(&self, id: u64, ptr: u64, item_size: u64) {
         //This may need to be divided by four to be correct, I can't remember how pointers work
         let temp_set = vec![(ptr, ptr + item_size)].to_interval_set();
         let intersection = self.space_occupied.intersection(&temp_set);

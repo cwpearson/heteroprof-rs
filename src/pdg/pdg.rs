@@ -108,16 +108,16 @@ fn handle_cuda_memcpy(
         }
         1 => {
             //Create a value on the Device
-            state.update_allocations(cm.dst, cm.count);
+            state.update_allocations(cm.id, cm.dst, cm.count);
         }
         2 => {
             //Create a value on the host -- for now do nothing
-            state.update_allocations(cm.src, cm.count);
+            state.update_allocations(cm.id, cm.src, cm.count);
         }
         3 => {
             //Fill in later
-            state.update_allocations(cm.dst, cm.count);
-            state.update_allocations(cm.src, cm.count);
+            state.update_allocations(cm.id, cm.dst, cm.count);
+            state.update_allocations(cm.id, cm.src, cm.count);
         }
         _ => {
             panic!("This should never happen, input file may be corrupted");

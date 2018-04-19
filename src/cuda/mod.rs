@@ -39,14 +39,14 @@ impl State {
         }
     }
 
-    pub fn update_allocations(&mut self, allocation_start: u64, allocation_size: u64) {
+    pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) {
         let mut iter = self.allocations.iter();
 
         //let mut alloc =
         match iter.find(|&a| a.contains(allocation_start)) {
             Some(v) => {
                 println!("Allocation found!");
-                v.value_occupied(allocation_start, allocation_size);
+                v.value_occupied(id, allocation_start, allocation_size);
                 // Some(v)
             }
             _ => {
