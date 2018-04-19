@@ -101,57 +101,28 @@ fn handle_cuda_memcpy(
         _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
     };
 
-    let src_success = false; //filter_set.contains(src_pos);
-    let dst_success = false; //filter_set.contains(dst_pos);
-
-    // if (!src_success) {
-    //     //Create a new value for the source, as it has not been seen before
-    //     match cm.cuda_memcpy_kind {
-    //         //Decide on what behaviour to exhibit depending on memcpy_kind
-    //         0 => {
-    //             //Will probably never be seeing this
-    //         }
-    //         1 => {
-    //             //Create a value on the host -- for now do nothing
-    //         }
-    //         2 => {
-    //             //This should also be rare
-    //         }
-    //         3 => {
-    //             //Fill in later
-    //         }
-
-    //         _ => {
-    //             panic!("This should never happen, input file may be corrupted");
-    //         }
-    //     }
-    // } else {
-    // }
-
-    // if (!dst_success) {
-    //     //Create a new value for the destination
-    //     match cm.cuda_memcpy_kind {
-    //         //Decide on what behaviour to exhibit depending on memcpy_kind
-    //         0 => {
-    //             //Will probably never be seeing this
-    //         }
-    //         1 => {
-    //             //Create a value on the Device
-    //         }
-    //         2 => {
-    //             //Create a value on the host -- for now do nothing
-    //         }
-    //         3 => {
-    //             //Fill in later
-    //         }
-    //         _ => {
-    //             panic!("This should never happen, input file may be corrupted");
-    //         }
-    //     }
-    // } else {
-
-    state.update_allocations(cm.src, cm.count);
-    state.update_allocations(cm.dst, cm.count);
+    match cm.cuda_memcpy_kind {
+        //Decide on what behaviour to exhibit depending on memcpy_kind
+        0 => {
+            //Will probably never be seeing this
+        }
+        1 => {
+            //Create a value on the Device
+            state.update_allocations(cm.dst, cm.count);
+        }
+        2 => {
+            //Create a value on the host -- for now do nothing
+            state.update_allocations(cm.src, cm.count);
+        }
+        3 => {
+            //Fill in later
+            state.update_allocations(cm.dst, cm.count);
+            state.update_allocations(cm.src, cm.count);
+        }
+        _ => {
+            panic!("This should never happen, input file may be corrupted");
+        }
+    }
 
     let duration = cm.wall_end - cm.wall_start;
 

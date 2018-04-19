@@ -53,21 +53,7 @@ impl State {
                 println!("Allocation not found!");
                 // None
             }
-        } //;
-
-        // let mut alloc_mut = alloc.as_mut();
-        // let mut hi = match alloc_mut {
-        //     Some(v) => {
-        //         v = v.get_mut();
-        //         let mut z = Rc::get_mut(&mut v);
-        //         if let Some(z) = z {
-        //             z.value_occupied(allocation_start, allocation_size);
-        //         }
-        //     }
-        //     None => {
-        //         //Do nothing
-        //     }
-        // }
+        }
     }
 }
 
