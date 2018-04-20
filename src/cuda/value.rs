@@ -6,13 +6,14 @@ use std::rc::Rc;
 use cuda::allocation::{AddressSpace, Allocation};
 use std;
 use std::cmp::{Eq, Ordering, PartialEq};
+use std::fmt::Debug;
 
 // #[derive(Serialize, Deserialize)]
 // struct ValueRaw {
 //     value: Value,
 // }
 
-// #[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Value {
     pub id: u64,
     pub ptr: u64,

@@ -5,6 +5,7 @@ extern crate serde_json;
 
 //Traits that we must implement
 use std::cmp::{Eq, Ordering, PartialEq};
+use std::fmt::Debug;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::gcollections::ops::set::{Intersection, Union};
@@ -13,12 +14,12 @@ use std::collections::HashMap;
 use cuda::value::Value;
 use std::rc::Rc;
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AddressSpace {
     UVA,
 }
 
-#[derive(PartialEq, Eq, Clone)]
+#[derive(PartialEq, Eq, Clone, Debug)]
 pub struct Allocation {
     pub id: u64,
     pub pos: u64,

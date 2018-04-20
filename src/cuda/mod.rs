@@ -1,15 +1,19 @@
+extern crate interval;
+
 pub mod allocation;
 pub mod value;
 pub mod dim3;
 pub mod configured_call;
 
+use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use std::collections::{BTreeSet, HashMap};
 use std::ops::{Index, IndexMut};
 use std::ops::Range;
-use cuda::allocation::Allocation;
+use cuda::allocation::{AddressSpace, Allocation};
 use cuda::value::Value;
 use cuda::configured_call::ConfiguredCall;
 use std::rc::Rc;
+use std::option::Option;
 
 pub struct Thread {
     pub current_device: u64,
@@ -33,58 +37,51 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
+        let mut allocation_tree = BTreeSet::new();
+
         State {
             threads: HashMap::new(),
-            allocations: BTreeSet::new(),
+            allocations: allocation_tree,
         }
     }
 
     pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) {
-        let mut key;
+        let mut key = {
+            let mut iter = self.allocations.iter();
 
-        {
-            //Want to clone the iterator so we do not have an immutable
-            //borrow vs mutable borrow error
-            let mut iter = self.allocations.iter().cloned();
-
-            key = match iter.find(|ref a| a.contains(allocation_start)) {
-                Some(v) => {
-                    // let mut allocation = self.allocations.get(v);
-                    // let mut allocation_mut = allocation.as_mut();
-                    // let mut allocation_run = allocation.unwrap();
-                    // v.value_occupied(id, allocation_start, allocation_size);
-                    Some(v)
-                }
+            let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
+                Some(v) => Some(v),
                 _ => {
                     println!("Allocation not found!");
                     None
                     // None
                 }
             };
-        }
 
-        if let Some(key) = key {
-            let mut alloc;
-            {
-                alloc = self.allocations.get(&key).clone();
-            };
-
-            {
-                self.allocations.remove(&key);
-
-                let mut alloc_unwrap = alloc.as_mut().unwrap();
-                let mut alloc_mut = Rc::make_mut(alloc_unwrap);
-                alloc_mut.value_occupied(id, allocation_start, allocation_size);
-                let new_alloc_immut = alloc_mut;
-                let alloc_rc = Rc::new(*new_alloc_immut);
-                self.allocations.insert(alloc_rc);
-            }
-
-            // .value_occupied(id, allocation_start, allocation_size);
-            // if let Some(alloc) = alloc {
-            // alloc.value_occupied(id, allocation_start, allocation_size);
-            // };
+            current_key
+                .unwrap()
+                
+                /*
+                If we want to handle there not being an allocation
+                    //The or else should basically never happen.
+            //Means we missed something in a CudaMalloc
+                (|| {
+                    &Rc::new(Allocation {
+                        id: id,
+                        pos: allocation_start,
+                        size: allocation_size,
+                        address_space: AddressSpace::UVA,
+                        space_occupied: vec![(0, 0)].to_interval_set(),
+                        values: HashMap::new(),
+                    })
+                })*/
+                .clone()
         };
+
+        let mut alloc = Rc::try_unwrap(self.allocations.take(&key).unwrap()).unwrap();
+        alloc.value_occupied(id, allocation_start, allocation_size);
+        let alloc_insert = Rc::new(alloc);
+        self.allocations.insert(alloc_insert);
     }
 }
 
