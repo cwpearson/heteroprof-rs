@@ -17,7 +17,7 @@ pub struct Value {
     pub id: u64,
     pub ptr: u64,
     pub size: u64,
-    pub allocation: Rc<&'a allocation::Allocation>,
+    // pub allocation: Rc<&'a allocation::Allocation<'a>>,
     pub times_modified: u64,
 }
 
@@ -34,22 +34,25 @@ pub struct Value {
 //     Ok(a)
 // }
 
-pub fn val_from_malloc(v: &callback::CudaMallocS, alloc: &Rc<allocation::Allocation>) -> Value {
-    // let awr: Value = match serde_json::from_value(v) {
-    //     Ok(a) => a,
-    //     Err(e) => return Err(e),
-    // };
+// pub fn val_from_malloc<'a>(
+//     v: &callback::CudaMallocS,
+//     alloc: &Rc<allocation::Allocation>,
+// ) -> Value<'a> {
+//     // let awr: Value = match serde_json::from_value(v) {
+//     //     Ok(a) => a,
+//     //     Err(e) => return Err(e),
+//     // };
 
-    let awr = Value {
-        id: v.id,
-        ptr: v.ptr,
-        size: v.size,
-        allocation: Rc::clone(alloc),
-        times_modified: 1,
-    };
+//     let awr = Value {
+//         id: v.id,
+//         ptr: v.ptr,
+//         size: v.size,
+//         allocation: Rc::clone(alloc),
+//         times_modified: 1,
+//     };
 
-    awr
-}
+//     awr
+// }
 
 #[test]
 fn value_from_malloc_test() {

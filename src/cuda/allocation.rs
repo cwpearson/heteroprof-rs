@@ -3,7 +3,9 @@ extern crate interval;
 extern crate serde;
 extern crate serde_json;
 
+//Traits that we must implement
 use std::cmp::{Eq, Ordering, PartialEq};
+
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::gcollections::ops::set::{Intersection, Union};
 use self::gcollections::ops::cardinality::IsEmpty;
@@ -11,12 +13,12 @@ use std::collections::HashMap;
 use cuda::value::Value;
 use std::rc::Rc;
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub enum AddressSpace {
     UVA,
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq, Eq, Clone)]
 pub struct Allocation {
     pub id: u64,
     pub pos: u64,
@@ -38,12 +40,10 @@ impl Allocation {
         if intersection.is_empty() {
             //All good, create away
             self.space_occupied.union(&temp_set);
-            let temp_allocation = Rc::from(self);
             let temp_val = Value {
                 id: id,
                 ptr: ptr,
                 size: item_size,
-                allocation: temp_allocation,
                 times_modified: 0,
             };
             self.values.insert((ptr, item_size), Rc::from(temp_val));
@@ -64,6 +64,8 @@ impl PartialOrd for Allocation {
         Some(self.cmp(other))
     }
 }
+
+// impl Borrow for Allocation {}
 
 // impl Eq for Rc<Value> {}
 //
