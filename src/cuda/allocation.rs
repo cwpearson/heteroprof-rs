@@ -3,9 +3,10 @@ extern crate interval;
 extern crate serde;
 extern crate serde_json;
 
-//Traits that we must implement
+//Traits that we must implement or that we need
 use std::cmp::{Eq, Ordering, PartialEq};
 use std::fmt::Debug;
+use cuda::allocation::gcollections::ops::Bounded;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::gcollections::ops::set::{Intersection, Union};
@@ -53,12 +54,33 @@ impl Allocation {
             //What we are doing right now is just creating a value on top of the
             //the other value.
 
+            let mut highest_modified = {
+                // let intersection_iter = intersection.into_iter();
+                let mut highest_seen = 0;
+
+                for x in intersection.lower()..intersection.upper() {
+                    match self.values.get(&(x, item_size)) {
+                        Some(v) => {
+                            if v.times_modified > highest_seen {
+                                highest_seen = v.times_modified;
+                            }
+                        }
+                        _ => {
+                            //do nothing
+                        }
+                    }
+                }
+
+                highest_seen
+            };
+            highest_modified = highest_modified + 1;
+
             self.space_occupied.union(&temp_set);
             let temp_val = Value {
                 id: id,
                 ptr: ptr,
                 size: item_size,
-                times_modified: 0, //Need to come up with some pattern matching for this
+                times_modified: highest_modified, //Need to come up with some pattern matching for this
             };
             self.values.insert((ptr, item_size), Rc::from(temp_val));
         }
