@@ -7,7 +7,6 @@ matrix:
   allow_failures:
     - rust: 
         - stable
-        - beta
-        -nightly
+        - nightly
   fast_finish: true
 cache: cargo
