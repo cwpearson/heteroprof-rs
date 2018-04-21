@@ -50,6 +50,17 @@ impl Allocation {
             self.values.insert((ptr, item_size), Rc::from(temp_val));
         } else {
             //Handle the intersection gracefully
+            //What we are doing right now is just creating a value on top of the
+            //the other value.
+
+            self.space_occupied.union(&temp_set);
+            let temp_val = Value {
+                id: id,
+                ptr: ptr,
+                size: item_size,
+                times_modified: 0, //Need to come up with some pattern matching for this
+            };
+            self.values.insert((ptr, item_size), Rc::from(temp_val));
         }
     }
 }

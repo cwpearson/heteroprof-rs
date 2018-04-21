@@ -37,11 +37,9 @@ pub struct State {
 
 impl State {
     pub fn new() -> State {
-        let mut allocation_tree = BTreeSet::new();
-
         State {
             threads: HashMap::new(),
-            allocations: allocation_tree,
+            allocations: BTreeSet::new(),
         }
     }
 
