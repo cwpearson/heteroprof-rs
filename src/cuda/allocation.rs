@@ -13,7 +13,7 @@ use self::gcollections::ops::set::{Intersection, Union};
 use self::gcollections::ops::cardinality::IsEmpty;
 use std::collections::HashMap;
 use cuda::value::Value;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AddressSpace {
@@ -47,7 +47,7 @@ impl Allocation {
         return (item >= self.pos) && (item < self.pos + self.size);
     }
 
-    pub fn value_occupied(&mut self, id: u64, ptr: u64, item_size: u64) {
+    pub fn value_occupied(&mut self, id: u64, ptr: u64, item_size: u64) -> Weak<Value> {
         //This may need to be divided by four to be correct, I can't remember how pointers work
         let temp_set = vec![(ptr, ptr + item_size)].to_interval_set();
         let intersection = self.space_occupied.intersection(&temp_set);
@@ -60,7 +60,10 @@ impl Allocation {
                 size: item_size,
                 times_modified: 0,
             };
-            self.values.insert((ptr, item_size), Rc::from(temp_val));
+            let temp_val_rc = Rc::from(temp_val);
+            let downgraded = Rc::downgrade(&temp_val_rc);
+            self.values.insert((ptr, item_size), temp_val_rc);
+            downgraded
         } else {
             //Handle the intersection gracefully
             //What we are doing right now is just creating a value on top of the
@@ -93,7 +96,10 @@ impl Allocation {
                 size: item_size,
                 times_modified: highest_modified, //Need to come up with some pattern matching for this
             };
-            self.values.insert((ptr, item_size), Rc::from(temp_val));
+            let temp_val_rc = Rc::from(temp_val);
+            let downgraded = Rc::downgrade(&temp_val_rc);
+            self.values.insert((ptr, item_size), temp_val_rc);
+            downgraded
         }
     }
 }

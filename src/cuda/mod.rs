@@ -12,7 +12,7 @@ use std::ops::Range;
 use cuda::allocation::{AddressSpace, Allocation};
 use cuda::value::Value;
 use cuda::configured_call::ConfiguredCall;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
 use std::option::Option;
 
 pub struct Thread {
@@ -43,7 +43,7 @@ impl State {
         }
     }
 
-    pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) {
+    pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) -> Weak<Value> {
      
         let mut key = {
             let mut iter = self.allocations.iter();
@@ -82,9 +82,10 @@ impl State {
         drop(key);
 
         let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
-        alloc.value_occupied(id, allocation_start, allocation_size);
+        let value_rc = alloc.value_occupied(id, allocation_start, allocation_size);
         let alloc_insert = Rc::new(alloc);
         self.allocations.insert(alloc_insert);
+        value_rc
     }
 }
 

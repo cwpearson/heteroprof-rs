@@ -176,8 +176,8 @@ fn document_statistics_test() {
 "#;
     let mut reader = BufReader::new(data.as_bytes());
     let doc: document::Document = decode_document(&mut reader).unwrap();
-    let documentStats = statistics::DocumentStatistics::new(doc);
-    documentStats.memory_transfer_statistics();
+    let document_stats = statistics::DocumentStatistics::new(doc);
+    document_stats.memory_transfer_statistics();
 }
 
 #[test]

@@ -14,7 +14,8 @@ use cuda;
 use cuda::allocation::{AddressSpace, Allocation};
 use cuda::value;
 pub use document::Document;
-use std::rc::Rc;
+use std::rc::{Rc, Weak};
+
 
 //Values as nodes and then computes and tranfsers as edges
 /*
@@ -28,9 +29,14 @@ What to do if a large value is then split into multiple small values, but a port
 untouched
 */
 
+//Node within the graph will be a unique identifier for a value
+//For now could just increment a counter
 pub struct PDG {
     next_id: u64,
-    pub edges: DiGraphMap<u64, Edge>,
+    value_map: HashMap<u64, Weak<value::Value>>,
+    current_edge_number: u64,
+    current_node_number: u64,
+    pub graph: DiGraphMap<u64, u64>,
     pub computes: HashMap<u64, Compute>,
     pub transfers: HashMap<u64, Transfer>,
 }
@@ -39,14 +45,61 @@ impl PDG {
     pub fn new() -> PDG {
         return PDG {
             next_id: 0,
-            edges: DiGraphMap::new(),
+            value_map: HashMap::new(),
+            graph: DiGraphMap::new(),
             computes: HashMap::new(),
             transfers: HashMap::new(),
+            current_edge_number: 0,
+            current_node_number: 0,
         };
     }
 
-    pub fn add_compute(&mut self, c: &Compute) {}
-    pub fn add_transfer(&mut self, t: &Transfer) {}
+    //
+    pub fn add_compute(&mut self, c: &Compute) {
+
+        
+    }
+
+    //Need src Value, dst Value, and Transfer
+    pub fn add_transfer(&mut self, t: Transfer, src_ptr: Weak<value::Value>, dst_ptr: Weak<value::Value>) {
+        // self.graph.add_edge(1, 2, 1);
+        let key = {
+            let node_itr = self.graph.nodes();
+            let mut current_key = self.current_node_number;
+            self.current_node_number += 1;
+
+            //Look to see if we have seen this value before
+            //We will often see this in the case of the src of 
+            //of a transfer.
+            for (key, value) in self.value_map.iter() {
+
+                let strong_value: Option<Rc<_>> = value.upgrade();
+                let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+
+
+                if strong_value.unwrap() == strong_ptr.unwrap() {
+                    current_key = *key;
+                }
+            }
+            current_key
+        };
+        
+        self.graph.add_edge(key, self.current_node_number, self.current_edge_number);
+        self.transfers.insert(self.current_edge_number, t);                    
+        self.current_node_number += 1;
+        self.current_edge_number += 1;
+
+        // match node_itr {
+        //     Some(node_itr) => {
+                
+        //     }
+        //     None => {
+        //         self.graph.add_edge(1, 3, self.current_edge_number);
+        //         self.transfers.insert(self.current_edge_number, *t);
+        //         self.current_edge_number += 1;
+        //     }
+        // }
+    }
 }
 
 fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cuda::State {
@@ -85,6 +138,7 @@ fn handle_cuda_memcpy(
     let src_pos = cm.src;
     let src_size = cm.count;
     let dst_pos = cm.dst;
+    let duration = cm.wall_end - cm.wall_start;
 
     //Identify what type of memory copy that it is
     let memcpy_kind = match cm.cuda_memcpy_kind {
@@ -102,34 +156,37 @@ fn handle_cuda_memcpy(
         }
         1 => {
             //Create a value on the Device
-            state.update_allocations(cm.id, cm.dst, cm.count);
+            let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
         }
         2 => {
             //Create a value on the host -- for now do nothing
-            state.update_allocations(cm.id, cm.src, cm.count);
+
+            //Update value on the gpu
+            let src_rc = state.update_allocations(cm.id, cm.src, cm.count);
         }
         3 => {
-            //Fill in later
-            state.update_allocations(cm.id, cm.dst, cm.count);
-            state.update_allocations(cm.id, cm.src, cm.count);
+            //Update values within allocations for both src and 
+            //dst.
+            let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
+            let src_rc = state.update_allocations(cm.id, cm.src, cm.count);
+
+            let transfer = Transfer {
+                correlation_id: cm.correlation_id,
+                cuda_device_id: 50, //Need to get this from activity
+                kind: memcpy_kind,
+                start: cm.wall_start,
+                dur: duration,
+                stream_id: 1, //Need to get this from activity
+            };
+            graph.add_transfer(transfer, src_rc, dst_rc);
         }
         _ => {
             panic!("This should never happen, input file may be corrupted");
         }
     }
 
-    let duration = cm.wall_end - cm.wall_start;
 
-    //We cannot get all information from callback, need to combine it with activity
-    let transfer = &Transfer {
-        correlation_id: cm.correlation_id,
-        cuda_device_id: 50,
-        kind: memcpy_kind,
-        start: cm.wall_start,
-        dur: duration,
-        stream_id: 1,
-    };
-    graph.add_transfer(transfer);
+  
     state
 }
 

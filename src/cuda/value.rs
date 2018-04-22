@@ -1,19 +1,24 @@
 extern crate serde;
 extern crate serde_json;
+extern crate petgraph;
+
 use callback;
 use cuda::allocation;
 use std::rc::Rc;
 use cuda::allocation::{AddressSpace, Allocation};
 use std;
 use std::cmp::{Eq, Ordering, PartialEq};
+use std::hash::Hash;
 use std::fmt::Debug;
+use self::petgraph::graphmap::NodeTrait;
+
 
 // #[derive(Serialize, Deserialize)]
 // struct ValueRaw {
 //     value: Value,
 // }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Copy, Clone, PartialOrd, Hash)]
 pub struct Value {
     pub id: u64,
     pub ptr: u64,
