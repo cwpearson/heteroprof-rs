@@ -53,14 +53,7 @@ fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cud
     //rustc says there is an error here, however no issues
     let set = vec![(0, 0)].to_interval_set();
 
-    let allocation = Rc::new(Allocation {
-        id: 0,
-        pos: cm.ptr,
-        size: cm.size,
-        address_space: AddressSpace::UVA,
-        space_occupied: set,
-        values: HashMap::new(),
-    });
+    let mut allocation = Rc::new(Allocation::new(0, cm.ptr, cm.size, AddressSpace::UVA));
     state.allocations.insert(Rc::clone(&allocation));
 
     state

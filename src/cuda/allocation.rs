@@ -31,6 +31,18 @@ pub struct Allocation {
 }
 
 impl Allocation {
+    pub fn new(temp_id: u64, temp_pos: u64, temp_size: u64, temp_addr: AddressSpace) -> Allocation {
+        Allocation {
+            id: temp_id,
+                pos: temp_pos,
+                size: temp_size,
+                address_space: temp_addr,
+                space_occupied: vec![(0, 0)].to_interval_set(),
+                values: HashMap::new(),
+        }
+    }
+
+
     pub fn contains(&self, item: u64) -> bool {
         return (item >= self.pos) && (item < self.pos + self.size);
     }
@@ -55,7 +67,6 @@ impl Allocation {
             //the other value.
 
             let mut highest_modified = {
-                // let intersection_iter = intersection.into_iter();
                 let mut highest_seen = 0;
 
                 for x in intersection.lower()..intersection.upper() {

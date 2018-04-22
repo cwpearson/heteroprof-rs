@@ -44,20 +44,22 @@ impl State {
     }
 
     pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) {
+     
         let mut key = {
             let mut iter = self.allocations.iter();
 
             let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
-                Some(v) => Some(v),
+                Some(v) => {
+                    Some(v)
+                },
                 _ => {
                     println!("Allocation not found!");
                     None
-                    // None
                 }
             };
 
-            current_key
-                .unwrap()
+            Rc::clone(current_key
+                .unwrap())
                 
                 /*
                 If we want to handle there not being an allocation
@@ -73,10 +75,13 @@ impl State {
                         values: HashMap::new(),
                     })
                 })*/
-                .clone()
+                // .clone()
         };
 
-        let mut alloc = Rc::try_unwrap(self.allocations.take(&key).unwrap()).unwrap();
+        let rc_pointer = self.allocations.take(&key).unwrap();
+        drop(key);
+
+        let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
         alloc.value_occupied(id, allocation_start, allocation_size);
         let alloc_insert = Rc::new(alloc);
         self.allocations.insert(alloc_insert);
