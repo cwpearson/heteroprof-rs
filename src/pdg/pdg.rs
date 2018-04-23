@@ -241,6 +241,7 @@ pub fn from_document(doc: &Document) -> PDG {
             }
             &CudaMemcpy(ref m) => {
                 state = handle_cuda_memcpy(&mut pdg, m, state);
+                println!("Handling memcpy!");
             }
             _ => (),
         }
