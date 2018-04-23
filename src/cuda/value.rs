@@ -27,6 +27,12 @@ pub struct Value {
     pub times_modified: u64,
 }
 
+impl Value {
+    pub fn increment(&mut self){
+        self.times_modified += 1;
+    }
+}
+
 // type ValueResult = Result<Value, serde_json::Error>;
 
 // pub fn from_value(v: serde_json::Value) -> ValueResult {

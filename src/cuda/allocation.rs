@@ -11,9 +11,11 @@ use cuda::allocation::gcollections::ops::Bounded;
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::gcollections::ops::set::{Intersection, Union};
 use self::gcollections::ops::cardinality::IsEmpty;
+
 use std::collections::HashMap;
 use cuda::value::Value;
 use std::rc::{Rc, Weak};
+use std::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AddressSpace {
@@ -27,7 +29,8 @@ pub struct Allocation {
     pub size: u64,
     pub address_space: AddressSpace,
     pub space_occupied: IntervalSet<u64>,
-    pub values: HashMap<(u64, u64), Rc<Value>>,
+    pub values: HashMap<u64, Rc<Value>>,
+    pub old_values: Vec<Rc<Value>>,
 }
 
 impl Allocation {
@@ -39,6 +42,12 @@ impl Allocation {
                 address_space: temp_addr,
                 space_occupied: vec![(0, 0)].to_interval_set(),
                 values: HashMap::new(),
+                old_values: vec![Rc::new(Value {
+                    id: 0,
+                    ptr: 0,
+                    size: 0,
+                    times_modified: 0
+                })],
         }
     }
 
@@ -62,7 +71,7 @@ impl Allocation {
             };
             let temp_val_rc = Rc::from(temp_val);
             let downgraded = Rc::downgrade(&temp_val_rc);
-            self.values.insert((ptr, item_size), temp_val_rc);
+            self.values.insert(ptr, temp_val_rc);
             downgraded
         } else {
             //Handle the intersection gracefully
@@ -73,7 +82,7 @@ impl Allocation {
                 let mut highest_seen = 0;
 
                 for x in intersection.lower()..intersection.upper() {
-                    match self.values.get(&(x, item_size)) {
+                    match self.values.get(&x) {
                         Some(v) => {
                             if v.times_modified > highest_seen {
                                 highest_seen = v.times_modified;
@@ -98,10 +107,28 @@ impl Allocation {
             };
             let temp_val_rc = Rc::from(temp_val);
             let downgraded = Rc::downgrade(&temp_val_rc);
-            self.values.insert((ptr, item_size), temp_val_rc);
+            self.values.insert(item_size, temp_val_rc);
             downgraded
         }
     }
+
+    pub fn compute_value(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>)  {
+
+        let mut value = self.values.remove(&ptr);
+   
+        let mut value_unwrapped = Rc::try_unwrap(value.unwrap()).unwrap();
+        let original = value_unwrapped.clone();
+
+        // let mut value_unwrapped = Rc::try_unwrap(*rc_value).unwrap(); 
+        value_unwrapped.increment();
+        let original_rc = Rc::new(original);
+        let updated_rc = Rc::new(value_unwrapped);
+
+        let downgraded = Rc::downgrade(&updated_rc);
+        let downgraded_original = Rc::downgrade(&original_rc);
+        (downgraded_original, downgraded)
+    }
+    
 }
 
 impl Ord for Allocation {

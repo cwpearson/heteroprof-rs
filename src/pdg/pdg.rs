@@ -126,6 +126,9 @@ fn handle_cuda_setup_argument(
     mut state: cuda::State,
 ) -> cuda::State {
     state[csa.calling_tid].configured_call.add_arg(csa.arg);
+
+    
+
     state
 }
 

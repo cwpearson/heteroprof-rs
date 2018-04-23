@@ -85,6 +85,33 @@ impl State {
         self.allocations.insert(alloc_insert);
         value_rc
     }
+
+    pub fn find_argument_values(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>) {
+        let key = {
+            let mut iter = self.allocations.iter();
+                let mut current_key = match iter.find(|&a| a.contains(ptr)) {
+                    Some(v) => {
+                        Some(v)
+                    },
+                    _ => {
+                        println!("Allocation not found!");
+                        None
+                    }
+            };
+            Rc::clone(current_key.unwrap())
+        };
+
+        let allocation = self.allocations.take(&key).unwrap();
+        drop(key);
+        let mut alloc = Rc::try_unwrap(allocation).unwrap();
+        let (downgraded_val, new_val) = alloc.compute_value(ptr);
+        // let alloc_insert = Rc::new(alloc);
+        // self.allocations.insert(alloc_insert);
+        // let cloned_value = val.clone();
+        (downgraded_val, new_val)
+    }
+
+
 }
 
 impl Index<u64> for State {
