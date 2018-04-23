@@ -149,20 +149,26 @@ fn handle_cuda_memcpy(
         _ => panic!("Memcpy kind not recognized, this should NEVER happen"),
     };
 
-    match cm.cuda_memcpy_kind {
+    let (src_rc, dst_rc) = match cm.cuda_memcpy_kind {
         //Decide on what behaviour to exhibit depending on memcpy_kind
-        0 => {
-            //Will probably never be seeing this
-        }
+        // 0 => {
+        //     //Will probably never be seeing this
+        // }
         1 => {
+            //Create a value on the host -- for now do nothing
+            let src_rc = state.add_host_pointer(cm.src);
             //Create a value on the Device
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
+
+            (src_rc, dst_rc)
         }
         2 => {
             //Create a value on the host -- for now do nothing
-
+            let dst_rc = state.add_host_pointer(cm.dst);
             //Update value on the gpu
             let src_rc = state.update_allocations(cm.id, cm.src, cm.count);
+
+            (src_rc, dst_rc)
         }
         3 => {
             //Update values within allocations for both src and 
@@ -170,20 +176,22 @@ fn handle_cuda_memcpy(
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
             let src_rc = state.update_allocations(cm.id, cm.src, cm.count);
 
-            let transfer = Transfer {
+            (src_rc, dst_rc)
+        }
+        _ => {
+            panic!("This should never happen, input file may be corrupted");
+        }
+    };
+
+     let transfer = Transfer {
                 correlation_id: cm.correlation_id,
                 cuda_device_id: 50, //Need to get this from activity
                 kind: memcpy_kind,
                 start: cm.wall_start,
                 dur: duration,
                 stream_id: 1, //Need to get this from activity
-            };
-            graph.add_transfer(transfer, src_rc, dst_rc);
-        }
-        _ => {
-            panic!("This should never happen, input file may be corrupted");
-        }
-    }
+    };
+    graph.add_transfer(transfer, src_rc, dst_rc);
 
 
   

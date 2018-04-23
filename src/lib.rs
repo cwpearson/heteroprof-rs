@@ -217,3 +217,18 @@ fn pdg_graph_transfer_generation_test() {
     assert_eq!(graph.graph.node_count(), 2);
     assert_eq!(graph.graph.edge_count(), 1);    
 }
+
+#[test]
+fn pdg_graph_host_transfer_generation_test() {
+        use std::io::BufReader;
+        let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+{"calling_tid":11358,"context_uid":1,"correlation_id":743,"hprof_kind":"cupti_callback","id":4,"name":"cudaMalloc","ptr":1099882823680,"size":112,"symbol_name":"","wall_end":1522732322548815154,"wall_start":1522732322547936932}
+{"calling_tid":11358,"context_uid":1,"correlation_id":744,"count":112,"cuda_memcpy_kind":1,"dst":1099882823680,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70368511724768,"symbol_name":"","wall_end":1522732322549018855,"wall_start":1522732322548899498}
+{"correlation_id":744,"cuda_device_id":0,"cuda_memcpy_kind":"htod","dst_kind":"device","dur":0,"hprof_kind":"cupti_activity","kind":"cupti_memcpy","runtime_correlation_id":0,"src_kind":"pageable","start":0,"stream_id":7}
+"#;
+    let mut reader = BufReader::new(data.as_bytes());
+    let doc: document::Document = decode_document(&mut reader).unwrap();
+    let graph = pdg::pdg::from_document(&doc);
+    assert_eq!(graph.graph.node_count(), 2);
+    assert_eq!(graph.graph.edge_count(), 1);  
+}

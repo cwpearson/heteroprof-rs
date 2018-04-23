@@ -17,7 +17,7 @@ use std::rc::{Rc, Weak};
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AddressSpace {
-    UVA,
+    UVA, HOST
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]

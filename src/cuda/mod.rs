@@ -32,6 +32,8 @@ impl Thread {
 pub struct State {
     pub threads: HashMap<u64, Thread>,
     pub allocations: BTreeSet<Rc<Allocation>>,
+    pub host_pointers: BTreeSet<u64>,
+    pub host_value: Rc<Value>,
     // pub values: BTreeSet<Rc<Value>>,
 }
 
@@ -40,7 +42,19 @@ impl State {
         State {
             threads: HashMap::new(),
             allocations: BTreeSet::new(),
+            host_pointers: BTreeSet::new(),
+            host_value: Rc::new(Value {
+                id: 0, 
+                ptr: 0,
+                size: 0,
+                times_modified: 0,
+            }),
         }
+    }
+
+    pub fn add_host_pointer(&mut self, ptr: u64) -> Weak<Value> {
+        self.host_pointers.insert(ptr);
+        Rc::downgrade(&self.host_value)
     }
 
     pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) -> Weak<Value> {
@@ -57,28 +71,12 @@ impl State {
                     None
                 }
             };
-
-            Rc::clone(current_key
-                .unwrap())
-                
-                /*
-                If we want to handle there not being an allocation
-                    //The or else should basically never happen.
-            //Means we missed something in a CudaMalloc
-                (|| {
-                    &Rc::new(Allocation {
-                        id: id,
-                        pos: allocation_start,
-                        size: allocation_size,
-                        address_space: AddressSpace::UVA,
-                        space_occupied: vec![(0, 0)].to_interval_set(),
-                        values: HashMap::new(),
-                    })
-                })*/
-                // .clone()
+            Rc::clone(current_key.unwrap())
         };
-
         let rc_pointer = self.allocations.take(&key).unwrap();
+
+        //Drop the value so there is only one strong reference pointer to key.
+        //Otherwise we cannot modify the value
         drop(key);
 
         let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
