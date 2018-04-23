@@ -214,7 +214,6 @@ fn pdg_graph_transfer_generation_test() {
     let mut reader = BufReader::new(data.as_bytes());
     let doc: document::Document = decode_document(&mut reader).unwrap();
     let graph = pdg::pdg::from_document(&doc);
-    println!("The node count in the graph is {}", graph.graph.node_count());
-    println!("The edge count in the graph is {}", graph.graph.edge_count());
-    
+    assert_eq!(graph.graph.node_count(), 2);
+    assert_eq!(graph.graph.edge_count(), 1);    
 }
