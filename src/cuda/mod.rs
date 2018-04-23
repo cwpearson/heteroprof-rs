@@ -59,7 +59,7 @@ impl State {
 
     pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) -> Weak<Value> {
      
-        let mut key = {
+        let key = {
             let mut iter = self.allocations.iter();
 
             let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {

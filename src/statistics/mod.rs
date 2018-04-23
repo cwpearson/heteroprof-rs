@@ -84,7 +84,7 @@ impl DocumentStatistics {
     }
 
     pub fn memory_transfer_statistics(&self) {
-        let mut memory_histogram: Histogram<MemoryTransferSizes> =
+        let memory_histogram: Histogram<MemoryTransferSizes> =
             Histogram::new(MemoryTransferSizes::iterator());
 
         for callback_iter in &self.doc.apis {

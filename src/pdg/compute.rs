@@ -89,7 +89,7 @@ fn api_test() {
                 "start":1.5217442345660603e+18,
                 "stream_id":14}
             }"#;
-    let mut reader = BufReader::new(data.as_bytes());
+    let reader = BufReader::new(data.as_bytes());
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
     let c: Compute = from_value(v).unwrap();
     assert_eq!(c.correlation_id, 1858 as u64);
