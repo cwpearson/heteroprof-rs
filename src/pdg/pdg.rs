@@ -55,9 +55,34 @@ impl PDG {
     }
 
     //
-    pub fn add_compute(&mut self, c: &Compute) {
+    pub fn add_compute(&mut self, c: Compute, src_ptr: Weak<value::Value>, dst_ptr: Weak<value::Value>) {
+        // self.graph.add_edge(1, 2, 1);
+        let key = {
+            let node_itr = self.graph.nodes();
+            let mut current_key = self.current_node_number;
+            self.current_node_number += 1;
 
+            //Look to see if we have seen this value before
+            //We will often see this in the case of the src of 
+            //of a transfer.
+            for (key, value) in self.value_map.iter() {
+
+                let strong_value: Option<Rc<_>> = value.upgrade();
+                let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+
+
+                if strong_value.unwrap() == strong_ptr.unwrap() {
+                    current_key = *key;
+                }
+            }
+            current_key
+        };
         
+        self.graph.add_edge(key, self.current_node_number, self.current_edge_number);
+        self.computes.insert(self.current_edge_number, c);                    
+        self.current_node_number += 1;
+        self.current_edge_number += 1;
+    
     }
 
     //Need src Value, dst Value, and Transfer
@@ -122,13 +147,26 @@ fn handle_cuda_configure_call(
 }
 
 fn handle_cuda_setup_argument(
+    graph: &mut PDG,
     csa: &callback::CudaSetupArgumentS,
     mut state: cuda::State,
 ) -> cuda::State {
     state[csa.calling_tid].configured_call.add_arg(csa.arg);
 
-    
-
+    let (original_val, new_val) = state.find_argument_values(csa.arg);
+    let temp_duration = csa.wall_end - csa.wall_start;
+    let comp = Compute {
+        completed: 1.0,
+        correlation_id: csa.correlation_id,
+        cuda_device_id: 1,
+        duration: temp_duration,
+        kind: String::from("fix"),
+        name: csa.symbol_name.clone(),
+        start: csa.wall_start,
+        stream_id: 1,
+        //Fill in 
+    };
+    graph.add_compute(comp, original_val, new_val);
     state
 }
 
@@ -248,7 +286,7 @@ pub fn from_document(doc: &Document) -> PDG {
                 state = handle_cuda_configure_call(cc, state);
             }
             &CudaSetupArgument(ref sa) => {
-                state = handle_cuda_setup_argument(sa, state);
+                state = handle_cuda_setup_argument(&mut pdg, sa, state);
             }
             &CudaMemcpy(ref m) => {
                 state = handle_cuda_memcpy(&mut pdg, m, state);

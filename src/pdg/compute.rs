@@ -16,8 +16,8 @@ pub struct Compute {
     pub cuda_device_id: u64,
     pub kind: String,
     pub name: String,
-    pub start: f64,
-    pub duration: f64,
+    pub start: u64,
+    pub duration: u64,
     pub completed: f64,
     pub stream_id: u64,
 }
