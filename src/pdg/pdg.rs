@@ -139,7 +139,7 @@ impl PDG {
         // }
     }
 
-    fn longest_path(self, start_node: u64) -> u64 {
+    fn longest_path(&mut self, start_node: u64) -> u64 {
         //Need to copy a reference to every node in the graph to the priority queue
         let mut hash_weight = HashMap::new();
         let mut pq = PriorityQueue::new();
@@ -149,20 +149,23 @@ impl PDG {
             pq.push(node, MAX);
         }
         pq.change_priority(&start_node, 0);
-        hash_weight.insert(&start_node, 0);
+        hash_weight.insert(start_node, 0);
 
         while pq.len() > 0 {
             //Should always have a value that we can pop off the PriorityQueue here
             let (current_node, current_weight) = pq.pop().unwrap();
             let neighbor_nodes = self.graph.neighbors(current_node);
             let neighbor_edges = self.graph.edges(current_node);
-
             for edge in neighbor_edges {
                 let (_, dst_node, weight) = edge;
                 let alt = current_weight - weight;
-                match hash_weight.entry(&dst_node) {
-                    Occupied(s) => {}
-
+                match hash_weight.entry(dst_node) {
+                    Occupied(mut s) => {
+                        if alt < *s.get() {
+                            pq.change_priority(&dst_node, alt);
+                            *s.get_mut() = alt;
+                        }
+                    }
                     Vacant(s) => {
                         pq.change_priority(&dst_node, alt);
                         s.insert(alt);
@@ -171,32 +174,40 @@ impl PDG {
             }
         }
 
-        0
+        let lengths = hash_weight.iter();
+        let (k, v) = lengths.max().unwrap();
+        *v
     }
 
-    pub fn num_nodes(self) -> usize {
+    pub fn num_nodes(&mut self) -> usize {
         self.graph.node_count()
     }
 
-    pub fn num_edges(self) -> usize {
+    pub fn num_edges(&mut self) -> usize {
         self.graph.edge_count()
     }
 
-    pub fn find_longest_path(self) {
-        let mut _nodes = self.graph.nodes();
+    pub fn find_longest_path(&mut self) {
         let mut sources = vec![];
+        let mut longest_path = vec![];
+        {
+            let mut _nodes = self.graph.nodes();
 
-        for node in _nodes {
-            let x = node;
-            let incoming = self.graph.neighbors_directed(node, Direction::Incoming);
-            if incoming.count() == 0 {
-                sources.push(node);
+            for node in _nodes {
+                let x = node;
+                let incoming = self.graph.neighbors_directed(node, Direction::Incoming);
+                if incoming.count() == 0 {
+                    sources.push(node);
+                }
             }
         }
 
         //Now look for the longest path using
         //Dijkstra
-        for source in sources {}
+        for source in sources {
+            let path_length = self.longest_path(source);
+            longest_path.push(path_length);
+        }
     }
 }
 
