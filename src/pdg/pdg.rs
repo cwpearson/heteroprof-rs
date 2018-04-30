@@ -1,21 +1,27 @@
 extern crate cuckoofilter;
 extern crate interval;
 extern crate petgraph;
+extern crate priority_queue;
 
-use self::petgraph::graphmap::DiGraphMap;
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
-use pdg::edge::Edge;
-use pdg::compute::Compute;
-use pdg::transfer::Transfer;
-use std::collections::HashMap;
-use callback;
+use self::petgraph::graphmap::DiGraphMap;
+use self::petgraph::Direction;
+use self::priority_queue::PriorityQueue;
 use activity;
+use callback;
 use cuda;
 use cuda::allocation::{AddressSpace, Allocation};
 use cuda::value;
 pub use document::Document;
+use pdg::compute::Compute;
+use pdg::edge::Edge;
+use pdg::transfer::Transfer;
+use std::cmp::Ordering;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::BinaryHeap;
+use std::collections::HashMap;
 use std::rc::{Rc, Weak};
-
+use std::u64::MAX;
 
 //Values as nodes and then computes and tranfsers as edges
 /*
@@ -55,7 +61,12 @@ impl PDG {
     }
 
     //
-    pub fn add_compute(&mut self, c: Compute, src_ptr: Weak<value::Value>, dst_ptr: Weak<value::Value>) {
+    pub fn add_compute(
+        &mut self,
+        c: Compute,
+        src_ptr: Weak<value::Value>,
+        dst_ptr: Weak<value::Value>,
+    ) {
         // self.graph.add_edge(1, 2, 1);
         let key = {
             let node_itr = self.graph.nodes();
@@ -63,13 +74,11 @@ impl PDG {
             self.current_node_number += 1;
 
             //Look to see if we have seen this value before
-            //We will often see this in the case of the src of 
+            //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-
                 let strong_value: Option<Rc<_>> = value.upgrade();
                 let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-
 
                 if strong_value.unwrap() == strong_ptr.unwrap() {
                     current_key = *key;
@@ -77,16 +86,21 @@ impl PDG {
             }
             current_key
         };
-        
-        self.graph.add_edge(key, self.current_node_number, self.current_edge_number);
-        self.computes.insert(self.current_edge_number, c);                    
+
+        self.graph
+            .add_edge(key, self.current_node_number, self.current_edge_number);
+        self.computes.insert(self.current_edge_number, c);
         self.current_node_number += 1;
         self.current_edge_number += 1;
-    
     }
 
     //Need src Value, dst Value, and Transfer
-    pub fn add_transfer(&mut self, t: Transfer, src_ptr: Weak<value::Value>, dst_ptr: Weak<value::Value>) {
+    pub fn add_transfer(
+        &mut self,
+        t: Transfer,
+        src_ptr: Weak<value::Value>,
+        dst_ptr: Weak<value::Value>,
+    ) {
         // self.graph.add_edge(1, 2, 1);
         let key = {
             let node_itr = self.graph.nodes();
@@ -94,13 +108,11 @@ impl PDG {
             self.current_node_number += 1;
 
             //Look to see if we have seen this value before
-            //We will often see this in the case of the src of 
+            //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-
                 let strong_value: Option<Rc<_>> = value.upgrade();
                 let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-
 
                 if strong_value.unwrap() == strong_ptr.unwrap() {
                     current_key = *key;
@@ -108,15 +120,16 @@ impl PDG {
             }
             current_key
         };
-        
-        self.graph.add_edge(key, self.current_node_number, self.current_edge_number);
-        self.transfers.insert(self.current_edge_number, t);                    
+
+        self.graph
+            .add_edge(key, self.current_node_number, self.current_edge_number);
+        self.transfers.insert(self.current_edge_number, t);
         self.current_node_number += 1;
         self.current_edge_number += 1;
 
         // match node_itr {
         //     Some(node_itr) => {
-                
+
         //     }
         //     None => {
         //         self.graph.add_edge(1, 3, self.current_edge_number);
@@ -124,6 +137,66 @@ impl PDG {
         //         self.current_edge_number += 1;
         //     }
         // }
+    }
+
+    fn longest_path(self, start_node: u64) -> u64 {
+        //Need to copy a reference to every node in the graph to the priority queue
+        let mut hash_weight = HashMap::new();
+        let mut pq = PriorityQueue::new();
+        for node in self.graph.nodes() {
+            //Populate the priority queue with all the nodes
+            //This is not the most memory efficient method, but should not pose an issue
+            pq.push(node, MAX);
+        }
+        pq.change_priority(&start_node, 0);
+        hash_weight.insert(&start_node, 0);
+
+        while pq.len() > 0 {
+            //Should always have a value that we can pop off the PriorityQueue here
+            let (current_node, current_weight) = pq.pop().unwrap();
+            let neighbor_nodes = self.graph.neighbors(current_node);
+            let neighbor_edges = self.graph.edges(current_node);
+
+            for edge in neighbor_edges {
+                let (_, dst_node, weight) = edge;
+                let alt = current_weight - weight;
+                match hash_weight.entry(&dst_node) {
+                    Occupied(s) => {}
+
+                    Vacant(s) => {
+                        pq.change_priority(&dst_node, alt);
+                        s.insert(alt);
+                    }
+                }
+            }
+        }
+
+        0
+    }
+
+    pub fn num_nodes(self) -> usize {
+        self.graph.node_count()
+    }
+
+    pub fn num_edges(self) -> usize {
+        self.graph.edge_count()
+    }
+
+    pub fn find_longest_path(self) {
+        let mut _nodes = self.graph.nodes();
+        let mut sources = vec![];
+
+        for node in _nodes {
+            let x = node;
+            let incoming = self.graph.neighbors_directed(node, Direction::Incoming);
+            if incoming.count() == 0 {
+                sources.push(node);
+            }
+        }
+
+        //Now look for the longest path using
+        //Dijkstra
+        for source in sources {}
     }
 }
 
@@ -164,7 +237,7 @@ fn handle_cuda_setup_argument(
         name: csa.symbol_name.clone(),
         start: csa.wall_start,
         stream_id: 1,
-        //Fill in 
+        //Fill in
     };
     graph.add_compute(comp, original_val, new_val);
     state
@@ -212,7 +285,7 @@ fn handle_cuda_memcpy(
             (src_rc, dst_rc)
         }
         3 => {
-            //Update values within allocations for both src and 
+            //Update values within allocations for both src and
             //dst.
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
             let src_rc = state.update_allocations(cm.id, cm.src, cm.count);
@@ -224,18 +297,16 @@ fn handle_cuda_memcpy(
         }
     };
 
-     let transfer = Transfer {
-                correlation_id: cm.correlation_id,
-                cuda_device_id: 50, //Need to get this from activity
-                kind: memcpy_kind,
-                start: cm.wall_start,
-                dur: duration,
-                stream_id: 1, //Need to get this from activity
+    let transfer = Transfer {
+        correlation_id: cm.correlation_id,
+        cuda_device_id: 50, //Need to get this from activity
+        kind: memcpy_kind,
+        start: cm.wall_start,
+        dur: duration,
+        stream_id: 1, //Need to get this from activity
     };
     graph.add_transfer(transfer, src_rc, dst_rc);
 
-
-  
     state
 }
 

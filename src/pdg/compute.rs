@@ -1,9 +1,9 @@
 extern crate serde;
 extern crate serde_json;
 
-use std::cmp::Ordering;
-use callback;
 use activity;
+use callback;
+use std::cmp::Ordering;
 
 #[derive(Serialize, Deserialize)]
 struct ComputeRaw {

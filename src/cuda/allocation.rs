@@ -5,8 +5,7 @@ extern crate serde_json;
 
 //Traits that we must implement or that we need
 use cuda::allocation::gcollections::ops::Bounded;
-use std::cmp::{Eq, Ordering, PartialEq};
-use std::fmt::Debug;
+use std::cmp::Ordering;
 
 use self::gcollections::ops::cardinality::IsEmpty;
 use self::gcollections::ops::set::{Intersection, Union};
@@ -43,14 +42,12 @@ impl Allocation {
             address_space: temp_addr,
             space_occupied: vec![(0, 0)].to_interval_set(),
             values: HashMap::new(),
-            old_values: vec![
-                Rc::new(Value {
-                    id: 0,
-                    ptr: 0,
-                    size: 0,
-                    times_modified: 0,
-                }),
-            ],
+            old_values: vec![Rc::new(Value {
+                id: 0,
+                ptr: 0,
+                size: 0,
+                times_modified: 0,
+            })],
         }
     }
 
@@ -115,7 +112,7 @@ impl Allocation {
     }
 
     pub fn compute_value(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>) {
-        let mut value = self.values.remove(&ptr);
+        let value = self.values.remove(&ptr);
 
         let mut value_unwrapped = Rc::try_unwrap(value.unwrap()).unwrap();
         let original = value_unwrapped.clone();
