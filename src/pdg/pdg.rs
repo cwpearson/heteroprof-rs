@@ -20,8 +20,8 @@ use std::cmp::Ordering;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::BinaryHeap;
 use std::collections::HashMap;
+use std::i64::MAX;
 use std::rc::{Rc, Weak};
-use std::u64::MAX;
 
 //Values as nodes and then computes and tranfsers as edges
 /*
@@ -139,7 +139,7 @@ impl PDG {
         // }
     }
 
-    fn longest_path(&mut self, start_node: u64) -> u64 {
+    fn longest_path(&mut self, start_node: u64, sinks: &Vec<u64>) -> u64 {
         //Need to copy a reference to every node in the graph to the priority queue
         let mut hash_weight = HashMap::new();
         let mut pq = PriorityQueue::new();
@@ -148,8 +148,8 @@ impl PDG {
             //This is not the most memory efficient method, but should not pose an issue
             pq.push(node, MAX);
         }
-        pq.change_priority(&start_node, 0);
-        hash_weight.insert(start_node, 0);
+        pq.change_priority(&start_node, 0 as i64);
+        hash_weight.insert(start_node, 0 as i64);
 
         while pq.len() > 0 {
             //Should always have a value that we can pop off the PriorityQueue here
@@ -158,7 +158,7 @@ impl PDG {
             let neighbor_edges = self.graph.edges(current_node);
             for edge in neighbor_edges {
                 let (_, dst_node, weight) = edge;
-                let alt = current_weight - weight;
+                let alt: i64 = current_weight - *weight as i64;
                 match hash_weight.entry(dst_node) {
                     Occupied(mut s) => {
                         if alt < *s.get() {
@@ -174,9 +174,20 @@ impl PDG {
             }
         }
 
+        let mut max_path = 0 as i64;
+
         let lengths = hash_weight.iter();
-        let (k, v) = lengths.max().unwrap();
-        *v
+        for length in lengths {
+            let (k, v) = length;
+
+            if sinks.contains(k) {
+                if -*v > max_path {
+                    max_path = -*v;
+                }
+            }
+        }
+
+        max_path as u64
     }
 
     pub fn num_nodes(&mut self) -> usize {
@@ -189,7 +200,10 @@ impl PDG {
 
     pub fn find_longest_path(&mut self) {
         let mut sources = vec![];
+        let mut sinks = vec![];
         let mut longest_path = vec![];
+
+        //Must scope immutable self so that it doesn't freak out with mutable reference
         {
             let mut _nodes = self.graph.nodes();
 
@@ -199,13 +213,18 @@ impl PDG {
                 if incoming.count() == 0 {
                     sources.push(node);
                 }
+
+                let outgoing = self.graph.neighbors_directed(node, Direction::Outgoing);
+                if outgoing.count() == 0 {
+                    sinks.push(node);
+                }
             }
         }
 
         //Now look for the longest path using
         //Dijkstra
         for source in sources {
-            let path_length = self.longest_path(source);
+            let path_length = self.longest_path(source, &sinks);
             longest_path.push(path_length);
         }
     }
