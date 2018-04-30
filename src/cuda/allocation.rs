@@ -4,22 +4,23 @@ extern crate serde;
 extern crate serde_json;
 
 //Traits that we must implement or that we need
+use cuda::allocation::gcollections::ops::Bounded;
 use std::cmp::{Eq, Ordering, PartialEq};
 use std::fmt::Debug;
-use cuda::allocation::gcollections::ops::Bounded;
 
-use self::interval::interval_set::{IntervalSet, ToIntervalSet};
-use self::gcollections::ops::set::{Intersection, Union};
 use self::gcollections::ops::cardinality::IsEmpty;
+use self::gcollections::ops::set::{Intersection, Union};
+use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 
-use std::collections::HashMap;
 use cuda::value::Value;
+use std::collections::HashMap;
 use std::rc::{Rc, Weak};
 use std::vec::Vec;
 
 #[derive(PartialEq, Eq, Clone, Debug)]
 pub enum AddressSpace {
-    UVA, HOST
+    UVA,
+    HOST,
 }
 
 #[derive(PartialEq, Eq, Clone, Debug)]
@@ -37,20 +38,21 @@ impl Allocation {
     pub fn new(temp_id: u64, temp_pos: u64, temp_size: u64, temp_addr: AddressSpace) -> Allocation {
         Allocation {
             id: temp_id,
-                pos: temp_pos,
-                size: temp_size,
-                address_space: temp_addr,
-                space_occupied: vec![(0, 0)].to_interval_set(),
-                values: HashMap::new(),
-                old_values: vec![Rc::new(Value {
+            pos: temp_pos,
+            size: temp_size,
+            address_space: temp_addr,
+            space_occupied: vec![(0, 0)].to_interval_set(),
+            values: HashMap::new(),
+            old_values: vec![
+                Rc::new(Value {
                     id: 0,
                     ptr: 0,
                     size: 0,
-                    times_modified: 0
-                })],
+                    times_modified: 0,
+                }),
+            ],
         }
     }
-
 
     pub fn contains(&self, item: u64) -> bool {
         return (item >= self.pos) && (item < self.pos + self.size);
@@ -112,14 +114,13 @@ impl Allocation {
         }
     }
 
-    pub fn compute_value(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>)  {
-
+    pub fn compute_value(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>) {
         let mut value = self.values.remove(&ptr);
-   
+
         let mut value_unwrapped = Rc::try_unwrap(value.unwrap()).unwrap();
         let original = value_unwrapped.clone();
 
-        // let mut value_unwrapped = Rc::try_unwrap(*rc_value).unwrap(); 
+        // let mut value_unwrapped = Rc::try_unwrap(*rc_value).unwrap();
         value_unwrapped.increment();
         let original_rc = Rc::new(original);
         let updated_rc = Rc::new(value_unwrapped);
@@ -128,7 +129,6 @@ impl Allocation {
         let downgraded_original = Rc::downgrade(&original_rc);
         (downgraded_original, downgraded)
     }
-    
 }
 
 impl Ord for Allocation {

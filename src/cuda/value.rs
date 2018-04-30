@@ -1,17 +1,16 @@
+extern crate petgraph;
 extern crate serde;
 extern crate serde_json;
-extern crate petgraph;
 
+use self::petgraph::graphmap::NodeTrait;
 use callback;
 use cuda::allocation;
-use std::rc::Rc;
 use cuda::allocation::{AddressSpace, Allocation};
 use std;
 use std::cmp::{Eq, Ordering, PartialEq};
-use std::hash::Hash;
 use std::fmt::Debug;
-use self::petgraph::graphmap::NodeTrait;
-
+use std::hash::Hash;
+use std::rc::Rc;
 
 // #[derive(Serialize, Deserialize)]
 // struct ValueRaw {
@@ -28,7 +27,7 @@ pub struct Value {
 }
 
 impl Value {
-    pub fn increment(&mut self){
+    pub fn increment(&mut self) {
         self.times_modified += 1;
     }
 }

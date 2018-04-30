@@ -1,10 +1,10 @@
-use pdg;
 use activity;
 use callback;
-use cuda;
 use cublas;
+use cuda;
 use cudnn;
 use nccl;
+use pdg;
 
 pub struct Document {
     pub activities: Vec<activity::Record>,

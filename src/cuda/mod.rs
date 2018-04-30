@@ -1,19 +1,19 @@
 extern crate interval;
 
 pub mod allocation;
-pub mod value;
-pub mod dim3;
 pub mod configured_call;
+pub mod dim3;
+pub mod value;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
-use std::collections::{BTreeSet, HashMap};
-use std::ops::{Index, IndexMut};
-use std::ops::Range;
 use cuda::allocation::{AddressSpace, Allocation};
-use cuda::value::Value;
 use cuda::configured_call::ConfiguredCall;
-use std::rc::{Rc, Weak};
+use cuda::value::Value;
+use std::collections::{BTreeSet, HashMap};
+use std::ops::Range;
+use std::ops::{Index, IndexMut};
 use std::option::Option;
+use std::rc::{Rc, Weak};
 
 pub struct Thread {
     pub current_device: u64,
@@ -44,7 +44,7 @@ impl State {
             allocations: BTreeSet::new(),
             host_pointers: BTreeSet::new(),
             host_value: Rc::new(Value {
-                id: 0, 
+                id: 0,
                 ptr: 0,
                 size: 0,
                 times_modified: 0,
@@ -57,15 +57,17 @@ impl State {
         Rc::downgrade(&self.host_value)
     }
 
-    pub fn update_allocations(&mut self, id: u64, allocation_start: u64, allocation_size: u64) -> Weak<Value> {
-     
+    pub fn update_allocations(
+        &mut self,
+        id: u64,
+        allocation_start: u64,
+        allocation_size: u64,
+    ) -> Weak<Value> {
         let key = {
             let mut iter = self.allocations.iter();
 
             let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
-                Some(v) => {
-                    Some(v)
-                },
+                Some(v) => Some(v),
                 _ => {
                     println!("Allocation not found!");
                     None
@@ -89,14 +91,12 @@ impl State {
     pub fn find_argument_values(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>) {
         let key = {
             let mut iter = self.allocations.iter();
-                let mut current_key = match iter.find(|&a| a.contains(ptr)) {
-                    Some(v) => {
-                        Some(v)
-                    },
-                    _ => {
-                        println!("Allocation not found!");
-                        None
-                    }
+            let mut current_key = match iter.find(|&a| a.contains(ptr)) {
+                Some(v) => Some(v),
+                _ => {
+                    println!("Allocation not found!");
+                    None
+                }
             };
             Rc::clone(current_key.unwrap())
         };
@@ -110,8 +110,6 @@ impl State {
         // let cloned_value = val.clone();
         (downgraded_val, new_val)
     }
-
-
 }
 
 impl Index<u64> for State {
