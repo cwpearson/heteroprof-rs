@@ -111,20 +111,25 @@ impl Allocation {
         }
     }
 
-    pub fn compute_value(&mut self, ptr: u64) -> (Weak<Value>, Weak<Value>) {
+    pub fn compute_value(&mut self, ptr: u64) -> Option<(Weak<Value>, Weak<Value>)> {
         let value = self.values.remove(&ptr);
 
-        let mut value_unwrapped = Rc::try_unwrap(value.unwrap()).unwrap();
-        let original = value_unwrapped.clone();
+        match value {
+            Some(v) => {
+                let mut value_unwrapped = Rc::try_unwrap(v).unwrap();
+                let original = value_unwrapped.clone();
 
-        // let mut value_unwrapped = Rc::try_unwrap(*rc_value).unwrap();
-        value_unwrapped.increment();
-        let original_rc = Rc::new(original);
-        let updated_rc = Rc::new(value_unwrapped);
+                // let mut value_unwrapped = Rc::try_unwrap(*rc_value).unwrap();
+                value_unwrapped.increment();
+                let original_rc = Rc::new(original);
+                let updated_rc = Rc::new(value_unwrapped);
 
-        let downgraded = Rc::downgrade(&updated_rc);
-        let downgraded_original = Rc::downgrade(&original_rc);
-        (downgraded_original, downgraded)
+                let downgraded = Rc::downgrade(&updated_rc);
+                let downgraded_original = Rc::downgrade(&original_rc);
+                Some((downgraded_original, downgraded))
+            }
+            _ => None,
+        }
     }
 }
 

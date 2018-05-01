@@ -42,8 +42,8 @@ add_common_fields!(pub struct CudaSetupArgumentS {
 });
 
 add_common_fields!(pub struct CudaConfigureCallS {
-    pub gridDim: Dim3<u64>,
-    pub blockDim: Dim3<u64>,
+    pub grid_dim: Dim3<u64>,
+    pub block_dim: Dim3<u64>,
     //These are currently not implemented in the JSON file
     // pub shared_mem: u64,
     // pub stream: u64,

@@ -198,7 +198,7 @@ impl PDG {
         self.graph.edge_count()
     }
 
-    pub fn find_longest_path(&mut self) {
+    pub fn find_longest_path(&mut self) -> u64 {
         let mut sources = vec![];
         let mut sinks = vec![];
         let mut longest_path = vec![];
@@ -227,6 +227,8 @@ impl PDG {
             let path_length = self.longest_path(source, &sinks);
             longest_path.push(path_length);
         }
+
+        *longest_path.iter().max().unwrap()
     }
 }
 
@@ -254,6 +256,31 @@ fn handle_cuda_launch(
     csa: &callback::CudaLaunchS,
     mut state: cuda::State,
 ) -> cuda::State {
+    for arg in state[csa.calling_tid].configured_call.args.clone() {
+        let val_option = state.find_argument_values(arg);
+
+        match val_option {
+            Some(val_option) => {
+                let (original_val, new_val) = val_option;
+                let temp_duration = csa.wall_end - csa.wall_start;
+                let comp = Compute {
+                    completed: 1.0,
+                    correlation_id: csa.correlation_id,
+                    cuda_device_id: 1,
+                    duration: temp_duration,
+                    kind: String::from("fix"),
+                    name: csa.symbol_name.clone(),
+                    start: csa.wall_start,
+                    stream_id: 1,
+                    //Fill in
+                };
+                graph.add_compute(comp, original_val, new_val);
+            }
+            _ => {
+                println!("Don't do anything");
+            }
+        }
+    }
     state[csa.calling_tid].configured_call.finish();
     state
 }
@@ -265,20 +292,6 @@ fn handle_cuda_setup_argument(
 ) -> cuda::State {
     state[csa.calling_tid].configured_call.add_arg(csa.arg);
 
-    // let (original_val, new_val) = state.find_argument_values(csa.arg);
-    // let temp_duration = csa.wall_end - csa.wall_start;
-    // let comp = Compute {
-    //     completed: 1.0,
-    //     correlation_id: csa.correlation_id,
-    //     cuda_device_id: 1,
-    //     duration: temp_duration,
-    //     kind: String::from("fix"),
-    //     name: csa.symbol_name.clone(),
-    //     start: csa.wall_start,
-    //     stream_id: 1,
-    //     //Fill in
-    // };
-    // graph.add_compute(comp, original_val, new_val);
     state
 }
 
@@ -407,6 +420,7 @@ pub fn from_document(doc: &Document) -> PDG {
             &CudaLaunch(ref cl) => {
                 println!("Cuda Launch");
                 state = handle_cuda_launch(&mut pdg, cl, state);
+                println!("Cuda launch finished");
             }
             _ => {
                 println!("Nothing");
