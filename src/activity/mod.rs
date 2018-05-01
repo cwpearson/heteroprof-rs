@@ -17,27 +17,25 @@ macro_rules! add_common_fields {
     };
 }
 
-add_common_fields!(
-pub struct Kernel3S {
+add_common_fields!(pub struct Kernel3S {
     pub completed: u64,
     pub name: String,
-}
-);
+});
 
-add_common_fields!(
-pub struct MemcpyS {
+add_common_fields!(pub struct MemcpyS {
     pub src_kind: String,
-    pub dst_kind:  String,    
+    pub dst_kind: String,
     pub cuda_memcpy_kind: String,
     pub runtime_correlation_id: u64,
-}
-);
+});
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "kind")]
 pub enum Record {
-    #[serde(rename = "cupti_kernel3")] Kernel3(Kernel3S),
-    #[serde(rename = "cupti_memcpy")] Memcpy(MemcpyS),
+    #[serde(rename = "cupti_kernel3")]
+    Kernel3(Kernel3S),
+    #[serde(rename = "cupti_memcpy")]
+    Memcpy(MemcpyS),
 }
 
 type ActivityResult = Result<Record, serde_json::Error>;

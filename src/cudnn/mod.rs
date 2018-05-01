@@ -1,7 +1,6 @@
 extern crate serde;
 extern crate serde_json;
 
-
 macro_rules! add_common_fields {
     (pub struct $name:ident { $( pub $field:ident: $ty:ty ),* $(,)* }) => {
         #[derive(Serialize, Deserialize)]
@@ -28,93 +27,80 @@ pub struct CudaConfigureCallS {
 }
 );*/
 
-add_common_fields!(
-pub struct CudnnActivationBackwardS {
+add_common_fields!(pub struct CudnnActivationBackwardS {
     pub input_vector: [u64; 10],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnActivationForwardS {
+add_common_fields!(pub struct CudnnActivationForwardS {
     pub input_vector: [u64; 6],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnAddTensorS {
+add_common_fields!(pub struct CudnnAddTensorS {
     pub input_vector: [u64; 6],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnConvolutionBackwardBiasS {
+add_common_fields!(pub struct CudnnConvolutionBackwardBiasS {
     pub input_vector: [u64; 5],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnConvolutionBackwardDataS {
+add_common_fields!(pub struct CudnnConvolutionBackwardDataS {
     pub input_vector: [u64; 12],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnConvolutionBackwardFilterS {
+add_common_fields!(pub struct CudnnConvolutionBackwardFilterS {
     pub input_vector: [u64; 12],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnConvolutionForwardS {
+add_common_fields!(pub struct CudnnConvolutionForwardS {
     pub input_vector: [u64; 12],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct CudnnCreateS {
-}
-);
+add_common_fields!(pub struct CudnnCreateS {});
 
-add_common_fields!(
-pub struct CudnnDestroyS {
-}
-);
+add_common_fields!(pub struct CudnnDestroyS {});
 
-add_common_fields!(
-pub struct CudnnPoolingForwardS {
+add_common_fields!(pub struct CudnnPoolingForwardS {
     pub input_vector: [u64; 6],
-    pub output_vector: [u64; 1]
-}
-);
+    pub output_vector: [u64; 1],
+});
 
-add_common_fields!(
-pub struct CudnnSoftmaxForwardS {
+add_common_fields!(pub struct CudnnSoftmaxForwardS {
     pub input_vector: [u64; 6],
-    pub output_vector: [u64; 1]
-}
-);
+    pub output_vector: [u64; 1],
+});
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
-    #[serde(rename = "cudnnActivationBackward")] CudnnActivationBackward(CudnnActivationBackwardS),
-    #[serde(rename = "cudnnActivationForward")] CudnnActivationForward(CudnnActivationForwardS),
-    #[serde(rename = "cudnnAddTensor")] CudnnAddTensor(CudnnAddTensorS),
-    #[serde(rename = "cudnnConvolutionBackwardBias")] CudnnConvolutionBackwardBias(CudnnConvolutionBackwardBiasS),
-    #[serde(rename = "cudnnConvolutionBackwardData")] CudnnConvolutionBackwardData(CudnnConvolutionBackwardDataS),
-    #[serde(rename = "cudnnConvolutionBackwardFilter")] CudnnConvolutionBackwardFilter(CudnnConvolutionBackwardFilterS),
-    #[serde(rename = "cudnnConvolutionForward")] CudnnConvolutionForward(CudnnConvolutionForwardS),
-    #[serde(rename = "cudnnCreate")] CudnnCreate(CudnnCreateS),
-    #[serde(rename = "cudnnDestroy")] CudnnDestroy(CudnnDestroyS),
-    #[serde(rename = "cudnnPoolingForward")] CudnnPoolingForward(CudnnPoolingForwardS),
-    #[serde(rename = "cudnnSoftmaxForward")] CudnnSoftmaxForward(CudnnSoftmaxForwardS),   
+    #[serde(rename = "cudnnActivationBackward")]
+    CudnnActivationBackward(CudnnActivationBackwardS),
+    #[serde(rename = "cudnnActivationForward")]
+    CudnnActivationForward(CudnnActivationForwardS),
+    #[serde(rename = "cudnnAddTensor")]
+    CudnnAddTensor(CudnnAddTensorS),
+    #[serde(rename = "cudnnConvolutionBackwardBias")]
+    CudnnConvolutionBackwardBias(CudnnConvolutionBackwardBiasS),
+    #[serde(rename = "cudnnConvolutionBackwardData")]
+    CudnnConvolutionBackwardData(CudnnConvolutionBackwardDataS),
+    #[serde(rename = "cudnnConvolutionBackwardFilter")]
+    CudnnConvolutionBackwardFilter(CudnnConvolutionBackwardFilterS),
+    #[serde(rename = "cudnnConvolutionForward")]
+    CudnnConvolutionForward(CudnnConvolutionForwardS),
+    #[serde(rename = "cudnnCreate")]
+    CudnnCreate(CudnnCreateS),
+    #[serde(rename = "cudnnDestroy")]
+    CudnnDestroy(CudnnDestroyS),
+    #[serde(rename = "cudnnPoolingForward")]
+    CudnnPoolingForward(CudnnPoolingForwardS),
+    #[serde(rename = "cudnnSoftmaxForward")]
+    CudnnSoftmaxForward(CudnnSoftmaxForwardS),
 }
 
 #[test]
@@ -147,13 +133,22 @@ fn cudnn_convolution_backward_bias_test() {
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
     let r: Record = from_value(v).unwrap();
     match r {
-        Record::CudnnConvolutionBackwardBias(s) => assert_eq!(s.input_vector, [70367866276052,69268418360352,1099906744320,70367866276056,69268422887520]),
+        Record::CudnnConvolutionBackwardBias(s) => assert_eq!(
+            s.input_vector,
+            [
+                70367866276052,
+                69268418360352,
+                1099906744320,
+                70367866276056,
+                69268422887520,
+            ]
+        ),
         _ => panic!("Expected a CudaSetupArgument!"),
     }
 }
 
 #[test]
-fn cudnn_convolution_backward_data_test(){
+fn cudnn_convolution_backward_data_test() {
     let data = r#"{"calling_tid":14585,
     "cudnn_handle":69269000513424,
     "hprof_kind":"cudnn",
@@ -164,14 +159,16 @@ fn cudnn_convolution_backward_data_test(){
     let v: serde_json::Value = serde_json::from_str(&data).unwrap();
     let r: Record = from_value(v).unwrap();
     match r {
-        Record::CudnnConvolutionBackwardData(s) => assert_eq!(s.cudnn_handle, 69269000513424 as u64),
+        Record::CudnnConvolutionBackwardData(s) => {
+            assert_eq!(s.cudnn_handle, 69269000513424 as u64)
+        }
         _ => panic!("Expected a CudaSetupArgument!"),
     }
 }
 
 #[test]
 fn cudnn_activation_backward_test() {
-     let data = r#"{"calling_tid":14585,
+    let data = r#"{"calling_tid":14585,
      "cudnn_handle":69269000513424,
      "hprof_kind":"cudnn",
      "id":681,
@@ -188,10 +185,9 @@ fn cudnn_activation_backward_test() {
     }
 }
 
-
 #[test]
 fn cudnn_activation_forward_test() {
-     let data = r#"{"calling_tid":14585,
+    let data = r#"{"calling_tid":14585,
      "cudnn_handle":69269000513424,
      "hprof_kind":"cudnn",
      "id":572,"input_vector":[69269001368544,70367866280808,69268418360064,1099889520640,70367866280812,69268418360064],
@@ -207,7 +203,7 @@ fn cudnn_activation_forward_test() {
 
 #[test]
 fn cudnn_convolution_backward_filter_test() {
-     let data = r#"{"calling_tid":14585,
+    let data = r#"{"calling_tid":14585,
      "cudnn_handle":69269000513424,
      "hprof_kind":"cudnn","id":785,
      "input_vector":[70367866276052,69268418359776,1099894161408,69268418360352,1099906744320,69268418359968,3,1099897522176,3464,70367866276056,69268418359456,1099889876992],
@@ -217,13 +213,13 @@ fn cudnn_convolution_backward_filter_test() {
     let r: Record = from_value(v).unwrap();
     match r {
         Record::CudnnConvolutionBackwardFilter(s) => assert_eq!(s.id, 785 as u64),
-        _ => panic!("s.id test failed!")
+        _ => panic!("s.id test failed!"),
     }
 }
 
 #[test]
 fn cudnn_create_test() {
-     let data = r#"{"calling_tid":14585,
+    let data = r#"{"calling_tid":14585,
      "cudnn_handle":70367866297760,
      "hprof_kind":"cudnn","id":414070,
      "input_vector":[],"name":"cudnnCreate","output_vector":[],

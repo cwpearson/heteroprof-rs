@@ -1,6 +1,5 @@
 extern crate serde;
 extern crate serde_json;
-
 use cuda::dim3::Dim3;
 
 macro_rules! add_common_fields {
@@ -19,55 +18,52 @@ macro_rules! add_common_fields {
     };
 }
 
-add_common_fields!(
-pub struct CudaMallocS {
+// pub struct CudaMallocS {
+//     #[serde(flatten)]
+//     allocation: CudaMallocSInner,
+// }
+
+add_common_fields!(pub struct CudaMallocS {
     pub ptr: u64,
     pub size: u64,
-}
-);
+});
 
-add_common_fields!(
-pub struct CudaMemcpyS {
+add_common_fields!(pub struct CudaMemcpyS {
     pub src: u64,
     pub count: u64,
     pub dst: u64,
     pub cuda_memcpy_kind: u64,
-}
-);
+});
 
-add_common_fields!(
-pub struct CudaSetupArgumentS {
+add_common_fields!(pub struct CudaSetupArgumentS {
     pub offset: u64,
     pub size: u64,
     pub arg: u64,
-}
-);
+});
 
-add_common_fields!(
-pub struct CudaConfigureCallS {
-    pub grid_dim: Dim3<u64>,
-    pub block_dim: Dim3<u64>,
-    pub shared_mem: u64,
-    pub stream: u64,
-}
-);
+add_common_fields!(pub struct CudaConfigureCallS {
+    pub gridDim: Dim3<u64>,
+    pub blockDim: Dim3<u64>,
+    //These are currently not implemented in the JSON file
+    // pub shared_mem: u64,
+    // pub stream: u64,
+});
 
-// {"calling_tid":4063,"context_uid":1,"correlation_id":2315,"func":4216851,"hprof_kind":"cupti_callback","id":2113,"name":"cudaLaunch","params":[],"symbol_name":"","wall_end":1522123362821600310,"wall_start":1522123362821578241}
-
-add_common_fields!(
-pub struct CudaLaunchS {
-        
-}
-);
+add_common_fields!(pub struct CudaLaunchS {});
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
-    #[serde(rename = "cudaMalloc")] CudaMalloc(CudaMallocS),
-    #[serde(rename = "cudaMemcpy")] CudaMemcpy(CudaMemcpyS),
-    #[serde(rename = "cudaSetupArgument")] CudaSetupArgument(CudaSetupArgumentS),
-    #[serde(rename = "cudaConfigureCall")] CudaConfigureCall(CudaConfigureCallS),
-    #[serde(rename = "cudaLaunch")] CudaLaunch(CudaLaunchS),
+    #[serde(rename = "cudaMalloc")]
+    CudaMalloc(CudaMallocS),
+    #[serde(rename = "cudaMemcpy")]
+    CudaMemcpy(CudaMemcpyS),
+    #[serde(rename = "cudaSetupArgument")]
+    CudaSetupArgument(CudaSetupArgumentS),
+    #[serde(rename = "cudaConfigureCall")]
+    CudaConfigureCall(CudaConfigureCallS),
+    #[serde(rename = "cudaLaunch")]
+    CudaLaunch(CudaLaunchS),
 }
 
 type RecordResult = Result<Record, serde_json::Error>;

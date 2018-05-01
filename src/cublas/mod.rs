@@ -1,7 +1,6 @@
 extern crate serde;
 extern crate serde_json;
 
-
 macro_rules! add_common_fields {
     (pub struct $name:ident { $( pub $field:ident: $ty:ty ),* $(,)* }) => {
         #[derive(Serialize, Deserialize)]
@@ -27,71 +26,53 @@ pub struct CudaConfigureCallS {
 }
 );*/
 
-add_common_fields!(
-pub struct CublasCreateS {
-    pub cublas_handle: u64, 
-}
-);
+add_common_fields!(pub struct CublasCreateS {
+    pub cublas_handle: u64,
+});
 
-add_common_fields!(
-pub struct CublasDestroyS {
-    pub handle: u64, 
-}
-);
+add_common_fields!(pub struct CublasDestroyS {
+    pub handle: u64,
+});
 
-add_common_fields!(
-pub struct CublasDgemmS {
-}
-);
+add_common_fields!(pub struct CublasDgemmS {});
 
-add_common_fields!(
-pub struct CublasDgemvS {
-}
-);
+add_common_fields!(pub struct CublasDgemvS {});
 
-add_common_fields!(
-pub struct CublasSasumS {
-}
-);
+add_common_fields!(pub struct CublasSasumS {});
 
-add_common_fields!(
-pub struct CublasSaxpyS {
-}
-);
+add_common_fields!(pub struct CublasSaxpyS {});
 
-add_common_fields!(
-pub struct CublasSdotS {
-}
-);
+add_common_fields!(pub struct CublasSdotS {});
 
-add_common_fields!(
-pub struct CublasSgemmS {
-}
-);
+add_common_fields!(pub struct CublasSgemmS {});
 
-add_common_fields!(
-pub struct CublasSgemvS {
-}
-);
+add_common_fields!(pub struct CublasSgemvS {});
 
-add_common_fields!(
-pub struct CublasSscalS {
-}
-);
+add_common_fields!(pub struct CublasSscalS {});
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
-    #[serde(rename = "cublasCreate")] CublasCreate(CublasCreateS),
-    #[serde(rename = "cublasDestroy")] CublasDestroy(CublasDestroyS),
-    #[serde(rename = "cublasDgemm")] CublasDgemm(CublasDgemmS),
-    #[serde(rename = "cublasDgemv")] CublasDgemv(CublasDgemvS),
-    #[serde(rename = "cublasSasum")] CublasSasum(CublasSasumS),
-    #[serde(rename = "cublasSaxpy")] CublasSaxpy(CublasSaxpyS),
-    #[serde(rename = "cublasSdot")] CublasSdot(CublasSdotS),
-    #[serde(rename = "cublasSgemm")] CublasSgemm(CublasSgemmS),
-    #[serde(rename = "cublasSgemv")] CublasSgemv(CublasSgemvS),
-    #[serde(rename = "cublasSscal")] CublasSscal(CublasSscalS),   
+    #[serde(rename = "cublasCreate")]
+    CublasCreate(CublasCreateS),
+    #[serde(rename = "cublasDestroy")]
+    CublasDestroy(CublasDestroyS),
+    #[serde(rename = "cublasDgemm")]
+    CublasDgemm(CublasDgemmS),
+    #[serde(rename = "cublasDgemv")]
+    CublasDgemv(CublasDgemvS),
+    #[serde(rename = "cublasSasum")]
+    CublasSasum(CublasSasumS),
+    #[serde(rename = "cublasSaxpy")]
+    CublasSaxpy(CublasSaxpyS),
+    #[serde(rename = "cublasSdot")]
+    CublasSdot(CublasSdotS),
+    #[serde(rename = "cublasSgemm")]
+    CublasSgemm(CublasSgemmS),
+    #[serde(rename = "cublasSgemv")]
+    CublasSgemv(CublasSgemvS),
+    #[serde(rename = "cublasSscal")]
+    CublasSscal(CublasSscalS),
 }
 
 #[test]
@@ -112,7 +93,7 @@ fn cublas_cublas_create_test() {
 
 #[test]
 fn cublas_cublas_destroy_test() {
-     let data = r#"{"calling_tid":11358,
+    let data = r#"{"calling_tid":11358,
      "handle":69269201188720,
      "hprof_kind":"cublas",
      "id":8,"input_vector":[],

@@ -249,6 +249,15 @@ fn handle_cuda_configure_call(
     state
 }
 
+fn handle_cuda_launch(
+    graph: &mut PDG,
+    csa: &callback::CudaLaunchS,
+    mut state: cuda::State,
+) -> cuda::State {
+    state[csa.calling_tid].configured_call.finish();
+    state
+}
+
 fn handle_cuda_setup_argument(
     graph: &mut PDG,
     csa: &callback::CudaSetupArgumentS,
@@ -256,20 +265,20 @@ fn handle_cuda_setup_argument(
 ) -> cuda::State {
     state[csa.calling_tid].configured_call.add_arg(csa.arg);
 
-    let (original_val, new_val) = state.find_argument_values(csa.arg);
-    let temp_duration = csa.wall_end - csa.wall_start;
-    let comp = Compute {
-        completed: 1.0,
-        correlation_id: csa.correlation_id,
-        cuda_device_id: 1,
-        duration: temp_duration,
-        kind: String::from("fix"),
-        name: csa.symbol_name.clone(),
-        start: csa.wall_start,
-        stream_id: 1,
-        //Fill in
-    };
-    graph.add_compute(comp, original_val, new_val);
+    // let (original_val, new_val) = state.find_argument_values(csa.arg);
+    // let temp_duration = csa.wall_end - csa.wall_start;
+    // let comp = Compute {
+    //     completed: 1.0,
+    //     correlation_id: csa.correlation_id,
+    //     cuda_device_id: 1,
+    //     duration: temp_duration,
+    //     kind: String::from("fix"),
+    //     name: csa.symbol_name.clone(),
+    //     start: csa.wall_start,
+    //     stream_id: 1,
+    //     //Fill in
+    // };
+    // graph.add_compute(comp, original_val, new_val);
     state
 }
 
@@ -384,16 +393,24 @@ pub fn from_document(doc: &Document) -> PDG {
                 println!("{} allocations", state.allocations.len());
             }
             &CudaConfigureCall(ref cc) => {
+                println!("Cuda Configure Call");
                 state = handle_cuda_configure_call(cc, state);
             }
             &CudaSetupArgument(ref sa) => {
+                println!("Cuda setup argument");
                 state = handle_cuda_setup_argument(&mut pdg, sa, state);
             }
             &CudaMemcpy(ref m) => {
                 state = handle_cuda_memcpy(&mut pdg, m, state);
                 println!("Handling memcpy!");
             }
-            _ => (),
+            &CudaLaunch(ref cl) => {
+                println!("Cuda Launch");
+                state = handle_cuda_launch(&mut pdg, cl, state);
+            }
+            _ => {
+                println!("Nothing");
+            }
         }
     }
 

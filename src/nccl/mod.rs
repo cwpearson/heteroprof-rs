@@ -1,7 +1,6 @@
 extern crate serde;
 extern crate serde_json;
 
-
 macro_rules! add_common_fields {
     (pub struct $name:ident { $( pub $field:ident: $ty:ty ),* $(,)* }) => {
         #[derive(Serialize, Deserialize)]
@@ -28,49 +27,41 @@ pub struct CudaConfigureCallS {
 }
 );*/
 
-add_common_fields!(
-pub struct NcclAllReduceS {
+add_common_fields!(pub struct NcclAllReduceS {
     pub input_vector: [u64; 1],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct NcclBcastS {
+add_common_fields!(pub struct NcclBcastS {
     pub input_vector: [u64; 1],
     pub output_vector: [u64; 1],
-}
-);
+});
 
-add_common_fields!(
-pub struct NcclCommDestroyS {
-}
-);
+add_common_fields!(pub struct NcclCommDestroyS {});
 
-add_common_fields!(
-pub struct NcclCommInitAllS {
+add_common_fields!(pub struct NcclCommInitAllS {
     pub gpu: u64,
     pub nccl_comm: u64,
-}
-);
+});
 
-add_common_fields!(
-pub struct NcclCommInitRankS {
+add_common_fields!(pub struct NcclCommInitRankS {
     pub gpu: u64,
-    pub nccl_comm :u64
-}
-);
-
-
+    pub nccl_comm: u64,
+});
 
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "name")]
 pub enum Record {
-    #[serde(rename = "ncclAllReduce")] NcclAllReduce(NcclAllReduceS),
-    #[serde(rename = "ncclBcast")] NcclBcast(NcclBcastS),
-    #[serde(rename = "ncclCommDestroy")] NcclCommDestroy(NcclCommDestroyS),
-    #[serde(rename = "ncclCommInitAll")] NcclCommInitAll(NcclCommInitAllS),
-    #[serde(rename = "ncclCommInitRank")] NccCommInitRank(NcclCommInitRankS),
+    #[serde(rename = "ncclAllReduce")]
+    NcclAllReduce(NcclAllReduceS),
+    #[serde(rename = "ncclBcast")]
+    NcclBcast(NcclBcastS),
+    #[serde(rename = "ncclCommDestroy")]
+    NcclCommDestroy(NcclCommDestroyS),
+    #[serde(rename = "ncclCommInitAll")]
+    NcclCommInitAll(NcclCommInitAllS),
+    #[serde(rename = "ncclCommInitRank")]
+    NccCommInitRank(NcclCommInitRankS),
 }
 
 // #[test]
