@@ -143,13 +143,13 @@ fn cuda_setup_argument_test() {
 #[test]
 fn cuda_configure_call_test() {
     let data = r#"{
-    "blockDim":{"x":32,"y":32,"z":1},
+    "block_dim":{"x":32,"y":32,"z":1},
     "stream": 100,
     "shared_mem": 101,
     "calling_tid":1390,
     "context_uid":1,
     "correlation_id":944,
-    "gridDim":{"x":20,"y":10,"z":1},
+    "grid_dim":{"x":20,"y":10,"z":1},
     "hprof_kind":"cupti_callback",
     "id":742,
     "name":"cudaConfigureCall",
