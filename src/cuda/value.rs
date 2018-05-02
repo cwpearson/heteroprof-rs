@@ -106,9 +106,11 @@ fn value_from_malloc_test() {
 // }
 impl PartialEq for Value {
     fn eq(&self, other: &Value) -> bool {
-        if (self.id == other.id) {
+        if self.ptr == other.ptr {
+            println!("Equal!!");
             return true;
         } else {
+            println!("Not equal");
             return false;
         }
     }

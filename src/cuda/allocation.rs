@@ -105,8 +105,10 @@ impl Allocation {
                 times_modified: highest_modified, //Need to come up with some pattern matching for this
             };
             let temp_val_rc = Rc::from(temp_val);
+            // println!("Strong count: {}", Rc::strong_count(&temp_val_rc));
+
             let downgraded = Rc::downgrade(&temp_val_rc);
-            self.values.insert(item_size, temp_val_rc);
+            self.values.insert(ptr, temp_val_rc);
             downgraded
         }
     }
@@ -116,6 +118,7 @@ impl Allocation {
 
         match value {
             Some(v) => {
+                // println!("Strong count: {}", Rc::strong_count(&v));
                 let mut value_unwrapped = Rc::try_unwrap(v).unwrap();
                 let original = value_unwrapped.clone();
 
@@ -126,9 +129,26 @@ impl Allocation {
 
                 let downgraded = Rc::downgrade(&updated_rc);
                 let downgraded_original = Rc::downgrade(&original_rc);
+                self.values.insert(ptr, updated_rc);
+                self.old_values.push(original_rc);
                 Some((downgraded_original, downgraded))
             }
-            _ => None,
+            _ => {
+                None
+                // //Hue
+                // let temp_val = Value {
+                //     id: id,
+                //     ptr: ptr,
+                //     size: item_size,
+                //     times_modified: highest_modified, //Need to come up with some pattern matching for this
+                // };
+                // let temp_val_rc = Rc::from(temp_val);
+                // println!("Strong count: {}", Rc::strong_count(&temp_val_rc));
+
+                // let downgraded = Rc::downgrade(&temp_val_rc);
+                // self.values.insert(ptr, temp_val_rc);
+                // Some((downgraded_original, downgraded))
+            }
         }
     }
 }

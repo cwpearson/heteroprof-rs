@@ -52,9 +52,9 @@ impl State {
         }
     }
 
-    pub fn add_host_pointer(&mut self, ptr: u64) -> Weak<Value> {
+    pub fn add_host_pointer(&mut self, ptr: u64) -> Option<Weak<Value>> {
         self.host_pointers.insert(ptr);
-        Rc::downgrade(&self.host_value)
+        Some(Rc::downgrade(&self.host_value))
     }
 
     pub fn update_allocations(
@@ -62,57 +62,113 @@ impl State {
         id: u64,
         allocation_start: u64,
         allocation_size: u64,
-    ) -> Weak<Value> {
+    ) -> Option<Weak<Value>> {
         let key = {
             let mut iter = self.allocations.iter();
 
             let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
                 Some(v) => Some(v),
                 _ => {
-                    println!("Allocation not found!");
+                    // println!("Allocation not found!");
                     None
                 }
             };
-            Rc::clone(current_key.unwrap())
+
+            let clone = match current_key {
+                Some(v) => Some(Rc::clone(v)),
+                _ => None,
+            };
+            clone
         };
-        let rc_pointer = self.allocations.take(&key).unwrap();
 
-        //Drop the value so there is only one strong reference pointer to key.
-        //Otherwise we cannot modify the value
-        drop(key);
+        let return_val = match key {
+            Some(v) => {
+                let rc_pointer = self.allocations.take(&v).unwrap();
 
-        let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
-        let value_rc = alloc.value_occupied(id, allocation_start, allocation_size);
-        let alloc_insert = Rc::new(alloc);
-        self.allocations.insert(alloc_insert);
-        value_rc
+                //Drop the value so there is only one strong reference pointer to key.
+                //Otherwise we cannot modify the value
+                drop(v);
+
+                let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
+                let value_rc = alloc.value_occupied(id, allocation_start, allocation_size);
+                let alloc_insert = Rc::new(alloc);
+                self.allocations.insert(alloc_insert);
+                Some(value_rc)
+            }
+            _ => None,
+        };
+        return_val
+    }
+
+    pub fn setup_arg_update_allocations(
+        &mut self,
+        id: u64,
+        allocation_start: u64,
+        allocation_size: u64,
+    ) -> Option<Weak<Value>> {
+        let key = {
+            let mut iter = self.allocations.iter();
+
+            let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
+                Some(v) => Some(v),
+                _ => {
+                    // println!("Allocation not found!");
+                    None
+                }
+            };
+
+            let clone = match current_key {
+                Some(v) => Some(Rc::clone(v)),
+                _ => None,
+            };
+            clone
+        };
+
+        let return_val = match key {
+            Some(v) => {
+                let rc_pointer = self.allocations.take(&v).unwrap();
+
+                //Drop the value so there is only one strong reference pointer to key.
+                //Otherwise we cannot modify the value
+                drop(v);
+
+                let mut alloc = Rc::try_unwrap(rc_pointer).unwrap();
+                let value_rc = alloc.value_occupied(id, allocation_start, allocation_size);
+                let alloc_insert = Rc::new(alloc);
+                self.allocations.insert(alloc_insert);
+                Some(value_rc)
+            }
+            _ => None,
+        };
+        return_val
     }
 
     pub fn find_argument_values(&mut self, ptr: u64) -> Option<(Weak<Value>, Weak<Value>)> {
         let key = {
             let mut iter = self.allocations.iter();
             let mut current_key = match iter.find(|&a| a.contains(ptr)) {
-                Some(v) => Some(v),
+                Some(v) => {
+                    // println!("Found allocation for argument {}", ptr);
+                    Some(v)
+                }
                 _ => {
-                    println!("Allocation not found in argument values");
+                    // println!("Argument does not have corresponding allocation, {}", ptr);
                     return None;
                 }
             };
             Rc::clone(current_key.unwrap())
         };
 
-        println!("104");
         let allocation = self.allocations.take(&key).unwrap();
-        println!("105");
 
         drop(key);
         let mut alloc = Rc::try_unwrap(allocation).unwrap();
-        println!("110");
-        alloc.compute_value(ptr)
+        // let mut cloned_value = alloc.clone();
+        let y = alloc.compute_value(ptr);
+        let alloc_insert = Rc::new(alloc);
+        self.allocations.insert(alloc_insert);
+        y
         // println!("112");
-        // let alloc_insert = Rc::new(alloc);
-        // self.allocations.insert(alloc_insert);
-        // let cloned_value = val.clone();
         // Some((downgraded_val, new_val))
     }
 }

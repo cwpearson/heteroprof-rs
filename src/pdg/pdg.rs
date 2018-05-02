@@ -4,9 +4,11 @@ extern crate petgraph;
 extern crate priority_queue;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
+use self::petgraph::algo::dijkstra;
 use self::petgraph::graphmap::DiGraphMap;
 use self::petgraph::Direction;
 use self::priority_queue::PriorityQueue;
+
 use activity;
 use callback;
 use cuda;
@@ -39,7 +41,7 @@ untouched
 //For now could just increment a counter
 pub struct PDG {
     next_id: u64,
-    value_map: HashMap<u64, Weak<value::Value>>,
+    value_map: HashMap<u64, u64>,
     current_edge_number: u64,
     current_node_number: u64,
     pub graph: DiGraphMap<u64, u64>,
@@ -67,6 +69,21 @@ impl PDG {
         src_ptr: Weak<value::Value>,
         dst_ptr: Weak<value::Value>,
     ) {
+        // println!("Adding compute!");
+        let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+        // match strong_ptr {
+        //     Some(s) => println!("Pointer: {}", s.ptr),
+        //     None => {
+        //         println!("There is no source pointer");
+        //     }
+        //     _ => {
+        //         println!("Undefined behaviour");
+        //     }
+        // }
+        let src_ptr_unwrap = strong_ptr.unwrap().ptr; //Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
+
+        // let src_ptr_unwrap = Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
+
         // self.graph.add_edge(1, 2, 1);
         let key = {
             let node_itr = self.graph.nodes();
@@ -77,15 +94,25 @@ impl PDG {
             //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-                let strong_value: Option<Rc<_>> = value.upgrade();
-                let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-
-                if strong_value.unwrap() == strong_ptr.unwrap() {
-                    current_key = *key;
+                // let strong_value: Option<Rc<_>> = value.upgrade();
+                // let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
+                // println!("The compute value ptr is: {}", value_ptr);
+                // println!("The compute src_ptr is {}", src_ptr_unwrap);
+                //
+                if *key == src_ptr_unwrap {
+                    // println!("They're equal!!!");
+                    current_key = *value;
+                    break;
                 }
             }
+
+            // let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+
             current_key
         };
+        //Value map should contain ptr as key, and current node number as value
+        self.value_map
+            .insert(src_ptr_unwrap, self.current_node_number);
 
         self.graph
             .add_edge(key, self.current_node_number, self.current_edge_number);
@@ -101,28 +128,83 @@ impl PDG {
         src_ptr: Weak<value::Value>,
         dst_ptr: Weak<value::Value>,
     ) {
+        // println!("Add the transfer!");
+        // println!("Strong references 1: {}", Rc::strong_count(&src_ptr));
+        // let x = src_ptr.ptr;
+        let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+        // match strong_ptr {
+        //     None => {
+        //         println!("Fuck");
+        //     }
+        //     Some(s) => {
+        //         println!("anti");
+        //         println!("{}", s.ptr);
+        //     }
+        //     _ => {
+        //         //fucking nothing
+        //     }
+        // }
+        // println!(
+        //     "Strong references 1: {}",
+        //     Rc::strong_count(&strong_ptr.unwrap())
+        // );
+        let src_ptr_unwrap = strong_ptr.unwrap().ptr; //Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
+                                                      // println!("Adding transfer 3");
+
         // self.graph.add_edge(1, 2, 1);
+        // let key = {
+        //     let node_itr = self.graph.nodes();
+        //     let mut current_key = self.current_node_number;
+        //     self.current_node_number += 1;
+
+        //     //Look to see if we have seen this value before
+        //     //We will often see this in the case of the src of
+        //     //of a transfer.
+        //     for (key, value) in self.value_map.iter() {
+        //         let strong_value: Option<Rc<_>> = value.upgrade();
+        //         let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+        //         let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
+        //         let src_ptr_unwrap = Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
+        //         println!("The value ptr is: {}", value_ptr);
+        //         println!("The src_ptr is {}", src_ptr_unwrap);
+
+        //         if value_ptr == src_ptr_unwrap {
+        //             println!("HERE");
+        //             current_key = *key;
+        //         }
+        //     }
+        //     current_key
+        // };
+
         let key = {
             let node_itr = self.graph.nodes();
             let mut current_key = self.current_node_number;
-            self.current_node_number += 1;
+            // self.current_node_number += 1;
 
             //Look to see if we have seen this value before
             //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-                let strong_value: Option<Rc<_>> = value.upgrade();
-                let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-
-                if strong_value.unwrap() == strong_ptr.unwrap() {
-                    current_key = *key;
+                // let strong_value: Option<Rc<_>> = value.upgrade();
+                // let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
+                // println!("The compute value ptr is: {}", value_ptr);
+                // println!("The compute src_ptr is {}", src_ptr_unwrap);
+                //
+                if *key == src_ptr_unwrap {
+                    current_key = *value;
+                    break;
                 }
             }
+
+            // let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
+
             current_key
         };
 
         self.graph
             .add_edge(key, self.current_node_number, self.current_edge_number);
+        self.value_map
+            .insert(src_ptr_unwrap, self.current_node_number);
         self.transfers.insert(self.current_edge_number, t);
         self.current_node_number += 1;
         self.current_edge_number += 1;
@@ -146,11 +228,11 @@ impl PDG {
         for node in self.graph.nodes() {
             //Populate the priority queue with all the nodes
             //This is not the most memory efficient method, but should not pose an issue
-            pq.push(node, MAX);
+            pq.push(node, -MAX);
         }
         pq.change_priority(&start_node, 0 as i64);
         hash_weight.insert(start_node, 0 as i64);
-
+        // dijkstra(self.graph, start_node, Some(sinks[0]), 1);
         while pq.len() > 0 {
             //Should always have a value that we can pop off the PriorityQueue here
             let (current_node, current_weight) = pq.pop().unwrap();
@@ -158,10 +240,10 @@ impl PDG {
             let neighbor_edges = self.graph.edges(current_node);
             for edge in neighbor_edges {
                 let (_, dst_node, weight) = edge;
-                let alt: i64 = current_weight - *weight as i64;
+                let alt: i64 = current_weight - 1; // (*weight as i64);
                 match hash_weight.entry(dst_node) {
                     Occupied(mut s) => {
-                        if alt < *s.get() {
+                        if alt > *s.get() {
                             pq.change_priority(&dst_node, alt);
                             *s.get_mut() = alt;
                         }
@@ -177,10 +259,16 @@ impl PDG {
         let mut max_path = 0 as i64;
 
         let lengths = hash_weight.iter();
+        for entry in sinks {
+            // println!("Sinks: {}", entry);
+        }
+
         for length in lengths {
             let (k, v) = length;
+            // println!("Length: {}", *v);
 
             if sinks.contains(k) {
+                // println!("Path {}", *v);
                 if -*v > max_path {
                     max_path = -*v;
                 }
@@ -215,7 +303,10 @@ impl PDG {
                 }
 
                 let outgoing = self.graph.neighbors_directed(node, Direction::Outgoing);
-                if outgoing.count() == 0 {
+                let x = outgoing.count();
+                // println!("Node number is: {}", node);
+                // println!("Outgoing count is: {}", x);
+                if x == 0 {
                     sinks.push(node);
                 }
             }
@@ -223,10 +314,16 @@ impl PDG {
 
         //Now look for the longest path using
         //Dijkstra
+        println!("Found sinks and sources");
         for source in sources {
             let path_length = self.longest_path(source, &sinks);
+            println!("Path lenght {}", path_length);
             longest_path.push(path_length);
         }
+
+        // let source = sources[1];
+        // let path_length = { self.longest_path(source, &sinks) };
+        // longest_path.push(path_length);
 
         *longest_path.iter().max().unwrap()
     }
@@ -260,8 +357,9 @@ fn handle_cuda_launch(
         let val_option = state.find_argument_values(arg);
 
         match val_option {
-            Some(val_option) => {
-                let (original_val, new_val) = val_option;
+            Some(s) => {
+                // println!("Arg: {}", arg);
+                let (original_val, new_val) = s;
                 let temp_duration = csa.wall_end - csa.wall_start;
                 let comp = Compute {
                     completed: 1.0,
@@ -277,7 +375,7 @@ fn handle_cuda_launch(
                 graph.add_compute(comp, original_val, new_val);
             }
             _ => {
-                println!("Don't do anything");
+                // println!("Don't do anything {}", arg);
             }
         }
     }
@@ -291,6 +389,9 @@ fn handle_cuda_setup_argument(
     mut state: cuda::State,
 ) -> cuda::State {
     state[csa.calling_tid].configured_call.add_arg(csa.arg);
+
+    //Count does not matter here
+    state.setup_arg_update_allocations(csa.id, csa.arg, 1);
 
     state
 }
@@ -324,6 +425,7 @@ fn handle_cuda_memcpy(
             //Create a value on the host -- for now do nothing
             let src_rc = state.add_host_pointer(cm.src);
             //Create a value on the Device
+
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
 
             (src_rc, dst_rc)
@@ -349,15 +451,22 @@ fn handle_cuda_memcpy(
         }
     };
 
-    let transfer = Transfer {
-        correlation_id: cm.correlation_id,
-        cuda_device_id: 50, //Need to get this from activity
-        kind: memcpy_kind,
-        start: cm.wall_start,
-        dur: duration,
-        stream_id: 1, //Need to get this from activity
-    };
-    graph.add_transfer(transfer, src_rc, dst_rc);
+    match (src_rc, dst_rc) {
+        (Some(v), Some(y)) => {
+            let transfer = Transfer {
+                correlation_id: cm.correlation_id,
+                cuda_device_id: 50, //Need to get this from activity
+                kind: memcpy_kind,
+                start: cm.wall_start,
+                dur: duration,
+                stream_id: 1, //Need to get this from activity
+            };
+            graph.add_transfer(transfer, v, y);
+        }
+        _ => {
+            //Don't do anything
+        }
+    }
 
     state
 }
@@ -403,24 +512,18 @@ pub fn from_document(doc: &Document) -> PDG {
         match api {
             &CudaMalloc(ref m) => {
                 state = handle_cuda_malloc(m, state);
-                println!("{} allocations", state.allocations.len());
             }
             &CudaConfigureCall(ref cc) => {
-                println!("Cuda Configure Call");
                 state = handle_cuda_configure_call(cc, state);
             }
             &CudaSetupArgument(ref sa) => {
-                println!("Cuda setup argument");
                 state = handle_cuda_setup_argument(&mut pdg, sa, state);
             }
             &CudaMemcpy(ref m) => {
                 state = handle_cuda_memcpy(&mut pdg, m, state);
-                println!("Handling memcpy!");
             }
             &CudaLaunch(ref cl) => {
-                println!("Cuda Launch");
                 state = handle_cuda_launch(&mut pdg, cl, state);
-                println!("Cuda launch finished");
             }
             _ => {
                 println!("Nothing");
@@ -428,26 +531,26 @@ pub fn from_document(doc: &Document) -> PDG {
         }
     }
 
-    for activity in doc.activities() {
-        use activity::Record::*;
-        match activity {
-            &Kernel3(ref m) => {
-                //Handle kernel launch activity
-            }
-            &Memcpy(ref m) => {
-                //Handle memcpy activity
-                state = handle_memcpy_activity(&mut pdg, m, state);
-            }
-            _ => panic!("Unexpected activity encountered!"),
-        }
-    }
+    // for activity in doc.activities() {
+    //     use activity::Record::*;
+    //     match activity {
+    //         &Kernel3(ref m) => {
+    //             //Handle kernel launch activity
+    //         }
+    //         &Memcpy(ref m) => {
+    //             //Handle memcpy activity
+    //             state = handle_memcpy_activity(&mut pdg, m, state);
+    //         }
+    //         _ => panic!("Unexpected activity encountered!"),
+    //     }
+    // }
 
-    for cudnn_call in doc.cudnn_calls() {
-        use cudnn::Record::*;
-        match cudnn_call {
-            _ => panic!("Unexpected cudnn activity encountered!"),
-        }
-    }
+    // for cudnn_call in doc.cudnn_calls() {
+    //     use cudnn::Record::*;
+    //     match cudnn_call {
+    //         _ => panic!("Unexpected cudnn activity encountered!"),
+    //     }
+    // }
 
     return pdg;
 }

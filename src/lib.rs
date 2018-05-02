@@ -95,16 +95,16 @@ pub fn decode_document<BR: BufRead + ?Sized>(br: &mut BR) -> DecoderResult<docum
             if let Some(kind) = obj.get("hprof_kind") {
                 match kind.as_str().unwrap() {
                     "cupti_callback" => {
-                        println!("Cupti_Callback seen");
+                        // println!("Cupti_Callback seen");
                         let lol = callback::from_value(val.take());
                         match lol {
                             Ok(a) => {
-                                println!("Cupti_Callback added");
+                                // println!("Cupti_Callback added");
                                 doc.add_api(a);
                                 continue;
                             }
                             Err(a) => {
-                                println!("{}", a);
+                                // println!("{}", a);
                             }
                         }
                         // if let Ok(a) = callback::from_value(val.take()) {
@@ -272,13 +272,36 @@ fn test_matrix_mul() {
     println!("The longest path is: {}", graph.find_longest_path());
 }
 
+// #[test]
+// fn satanic() {
+//     use std::io::BufReader;
+//     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+// {"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
+// "#;
+//     let mut reader = BufReader::new(data.as_bytes());
+//     let doc: document::Document = decode_document(&mut reader).unwrap();
+//     let graph = pdg::pdg::from_document(&doc);
+// }
+
 #[test]
-fn satanic() {
+fn large_file() {
+    use std::env;
+    use std::fs::File;
+    use std::io::prelude::*;
+
     use std::io::BufReader;
-    let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
-{"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
-"#;
-    let mut reader = BufReader::new(data.as_bytes());
+    //     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+    // {"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
+    // "#;
+    let mut f = File::open("/Users/dominicgrande/uiuc/thesis/heteroprof-rs/src/big2.cprof")
+        .expect("file not found");
+
+    let mut contents = String::new();
+    f.read_to_string(&mut contents)
+        .expect("something went wrong reading the file");
+    let mut reader = BufReader::new(contents.as_bytes());
     let doc: document::Document = decode_document(&mut reader).unwrap();
-    let graph = pdg::pdg::from_document(&doc);
+    let mut graph = pdg::pdg::from_document(&doc);
+    println!("The node count is: {}", graph.graph.node_count());
+    println!("The longest path is: {}", graph.find_longest_path());
 }
