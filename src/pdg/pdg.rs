@@ -43,7 +43,7 @@ untouched
 //For now could just increment a counter
 pub struct PDG<'a> {
     next_id: u64,
-    value_map: HashMap<u64, NodeIndex<u32>>,
+    pub value_map: HashMap<u64, NodeIndex<u32>>,
     current_edge_number: u64,
     current_node_number: u64,
     pub graph: Graph<&'a u64, f64>,
@@ -103,7 +103,7 @@ impl<'a> PDG<'a> {
         let src_node = key; //self.graph.add_node(key);
                             // let val = self.current_node_number;
 
-        let boxed_value = Box::new(self.current_node_number);
+        let boxed_value = Box::new(c.correlation_id);
         let dst_node: NodeIndex<u32> = self.graph.add_node(Box::leak(boxed_value));
 
         self.graph.add_edge(src_node, dst_node, 1.0);
@@ -135,7 +135,8 @@ impl<'a> PDG<'a> {
             //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-                if *key == src_ptr_unwrap {
+                if *key == dst_ptr_unwrap {
+                    println!("found key!");
                     current_key = *value;
                     break;
                 }
@@ -148,8 +149,7 @@ impl<'a> PDG<'a> {
 
         self.current_node_number += 1;
         self.current_edge_number += 1;
-        let dst_node = self.graph
-            .add_node(Box::leak(Box::new(self.current_node_number)));
+        let dst_node = self.graph.add_node(Box::leak(Box::new(t.correlation_id)));
         self.graph.add_edge(key, dst_node, 1.0);
         self.value_map.insert(dst_ptr_unwrap, dst_node);
 
@@ -233,12 +233,25 @@ fn edge_cost(cm: u64) -> u64 {
     return 1;
 }
 
-fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cuda::State {
+fn handle_cuda_malloc(
+    graph: &mut PDG,
+    cm: &callback::CudaMallocS,
+    mut state: cuda::State,
+) -> cuda::State {
     //rustc says there is an error here, however no issues
     let set = vec![(0, 0)].to_interval_set();
 
-    let mut allocation = Rc::new(Allocation::new(0, cm.ptr, cm.size, AddressSpace::UVA));
+    let mut allocation = Rc::new(Allocation::new(
+        cm.correlation_id,
+        cm.ptr,
+        cm.size,
+        AddressSpace::UVA,
+    ));
     state.allocations.insert(Rc::clone(&allocation));
+    println!("Adding cuda malloc to graph");
+    let boxed_value = Box::new(cm.correlation_id);
+    let dst_node: NodeIndex<u32> = graph.graph.add_node(Box::leak(boxed_value));
+    graph.value_map.insert(cm.ptr, dst_node);
 
     state
 }
@@ -331,6 +344,8 @@ fn handle_cuda_memcpy(
             //Create a value on the Device
 
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
+            println!("src_rc: {:?}", src_rc);
+            println!("dst_rc: {:?}", dst_rc);
 
             (src_rc, dst_rc)
         }
@@ -415,7 +430,7 @@ pub fn from_document(doc: &Document) -> PDG {
         use callback::Record::*;
         match api {
             &CudaMalloc(ref m) => {
-                state = handle_cuda_malloc(m, state);
+                state = handle_cuda_malloc(&mut pdg, m, state);
             }
             &CudaConfigureCall(ref cc) => {
                 state = handle_cuda_configure_call(cc, state);

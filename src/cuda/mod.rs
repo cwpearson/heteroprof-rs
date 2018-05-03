@@ -67,9 +67,12 @@ impl State {
             let mut iter = self.allocations.iter();
 
             let mut current_key = match iter.find(|&a| a.contains(allocation_start)) {
-                Some(v) => Some(v),
+                Some(v) => {
+                    println!("{:?}", v);
+                    Some(v)
+                }
                 _ => {
-                    // println!("Allocation not found!");
+                    println!("Allocation not found!");
                     None
                 }
             };

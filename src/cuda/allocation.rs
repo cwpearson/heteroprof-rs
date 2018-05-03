@@ -60,6 +60,8 @@ impl Allocation {
         let temp_set = vec![(ptr, ptr + item_size)].to_interval_set();
         let intersection = self.space_occupied.intersection(&temp_set);
         if intersection.is_empty() {
+            println!("No intersection, {}", ptr);
+
             //All good, create away
             self.space_occupied.union(&temp_set);
             let temp_val = Value {
@@ -76,6 +78,7 @@ impl Allocation {
             //Handle the intersection gracefully
             //What we are doing right now is just creating a value on top of the
             //the other value.
+            println!("Intersection, {}", ptr);
 
             let mut highest_modified = {
                 let mut highest_seen = 0;
