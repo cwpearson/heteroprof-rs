@@ -4,7 +4,7 @@ extern crate petgraph;
 extern crate priority_queue;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
-use self::petgraph::algo::{astar, bellman_ford, dijkstra};
+use self::petgraph::algo::{astar, bellman_ford, connected_components, dijkstra};
 use self::petgraph::graph::{Graph, NodeIndex};
 use self::petgraph::graphmap::DiGraphMap;
 use self::petgraph::Directed;
@@ -41,22 +41,22 @@ untouched
 
 //Node within the graph will be a unique identifier for a value
 //For now could just increment a counter
-pub struct PDG {
+pub struct PDG<'a> {
     next_id: u64,
     value_map: HashMap<u64, NodeIndex<u32>>,
     current_edge_number: u64,
     current_node_number: u64,
-    pub graph: Graph<&u64, f64>,
+    pub graph: Graph<&'a u64, f64>,
     pub computes: HashMap<u64, Compute>,
     pub transfers: HashMap<u64, Transfer>,
 }
 
-impl PDG {
-    pub fn new() -> PDG {
+impl<'a> PDG<'a> {
+    pub fn new() -> PDG<'a> {
         return PDG {
             next_id: 0,
             value_map: HashMap::<u64, NodeIndex<u32>>::new(),
-            graph: Graph::<u64, f64>::new(),
+            graph: Graph::<&'a u64, f64>::new(),
             computes: HashMap::new(),
             transfers: HashMap::new(),
             current_edge_number: 0,
@@ -83,7 +83,7 @@ impl PDG {
         // self.graph.add_edge(1, 2, 1);
         let key = {
             let node_itr = self.graph.raw_nodes().iter();
-            let mut current_key;
+            let mut current_key = NodeIndex::new(0);
             self.current_node_number += 1;
             for (key, value) in self.value_map.iter() {
                 if *key == src_ptr_unwrap {
@@ -101,9 +101,12 @@ impl PDG {
         self.value_map.insert(src_ptr_unwrap, key);
 
         let src_node = key; //self.graph.add_node(key);
-        let dst_node: NodeIndex<u32> = self.graph.add_node(&self.current_node_number);
+                            // let val = self.current_node_number;
 
-        self.graph.add_edge(src_node, dst_node, 1 as f64);
+        let boxed_value = Box::new(self.current_node_number);
+        let dst_node: NodeIndex<u32> = self.graph.add_node(Box::leak(boxed_value));
+
+        self.graph.add_edge(src_node, dst_node, 1.0);
         self.value_map.insert(dst_ptr_unwrap, dst_node);
 
         self.computes.insert(self.current_edge_number, c);
@@ -125,7 +128,7 @@ impl PDG {
 
         let key = {
             // let node_itr = self.graph.nodes();
-            let mut current_key;
+            let mut current_key = NodeIndex::new(0);
             // self.current_node_number += 1;
 
             //Look to see if we have seen this value before
@@ -145,8 +148,9 @@ impl PDG {
 
         self.current_node_number += 1;
         self.current_edge_number += 1;
-        let dst_node = self.graph.add_node(&self.current_node_number);
-        self.graph.add_edge(key, dst_node, 1);
+        let dst_node = self.graph
+            .add_node(Box::leak(Box::new(self.current_node_number)));
+        self.graph.add_edge(key, dst_node, 1.0);
         self.value_map.insert(dst_ptr_unwrap, dst_node);
 
         self.transfers.insert(self.current_edge_number, t);
@@ -154,10 +158,13 @@ impl PDG {
         self.current_edge_number += 1;
     }
 
-    fn longest_path(&mut self, start_node: NodeIndex, sinks: &Vec<NodeIndex>) -> u64 {
-        let values = dijkstra(self.graph, start_node, Some(sinks[0]), edge_cost);
+    fn longest_path(&mut self, start_node: NodeIndex, sinks: &Vec<NodeIndex>) {
+        let values = bellman_ford(&self.graph, start_node); //, Some(sinks[0]), edge_cost);
 
-        0
+        println!("Bellman ford values");
+        println!("{:?}", values);
+
+        // 0
     }
 
     pub fn num_nodes(&mut self) -> usize {
@@ -171,7 +178,7 @@ impl PDG {
     pub fn find_longest_path(&mut self) -> u64 {
         let mut sources = vec![];
         let mut sinks = vec![];
-        let mut longest_path = vec![];
+        // let mut longest_path = vec![];
 
         //Must scope immutable self so that it doesn't freak out with mutable reference
         {
@@ -196,12 +203,21 @@ impl PDG {
 
         //Now look for the longest path using
         //Dijkstra
+        println!(
+            "Connected components, {}",
+            connected_components(&self.graph)
+        );
+        println!("{:?}", self.graph);
+        println!("Is the graph directed, {}", self.graph.is_directed());
         println!("Found sinks and sources");
-        for source in sources {
-            let path_length = self.longest_path(source, &sinks);
-            println!("Path lenght {}", path_length);
-            longest_path.push(path_length);
-        }
+        println!("The source length is: {}", sources.len());
+        self.longest_path(NodeIndex::new(0), &sinks);
+        // for source in sources {
+        // let path_length =
+        // self.longest_path(source, &sinks);
+        // println!("Path lenght {}", path_length);
+        // longest_path.push(path_length);
+        // }
 
         // let source = sources[1];
         // let path_length = { self.longest_path(source, &sinks) };
