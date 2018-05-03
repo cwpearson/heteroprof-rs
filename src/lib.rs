@@ -218,36 +218,36 @@ fn pdg_graph_generation_test() {
     let graph = pdg::pdg::from_document(&doc);
 }
 
-#[test]
-fn pdg_graph_transfer_generation_test() {
-    use std::io::BufReader;
-    let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
-{"calling_tid":11358,"context_uid":1,"correlation_id":743,"hprof_kind":"cupti_callback","id":4,"name":"cudaMalloc","ptr":1099882823680,"size":112,"symbol_name":"","wall_end":1522732322548815154,"wall_start":1522732322547936932}
-{"calling_tid":11358,"context_uid":1,"correlation_id":745,"hprof_kind":"cupti_callback","id":6,"name":"cudaMalloc","ptr":70368511724768,"size":1024,"symbol_name":"","wall_end":1522732322549163887,"wall_start":1522732322549117684}
-{"calling_tid":11358,"context_uid":1,"correlation_id":744,"count":112,"cuda_memcpy_kind":3,"dst":1099882823680,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70368511724768,"symbol_name":"","wall_end":1522732322549018855,"wall_start":1522732322548899498}
-{"correlation_id":744,"cuda_device_id":0,"cuda_memcpy_kind":"htod","dst_kind":"device","dur":0,"hprof_kind":"cupti_activity","kind":"cupti_memcpy","runtime_correlation_id":0,"src_kind":"pageable","start":0,"stream_id":7}
-"#;
-    let mut reader = BufReader::new(data.as_bytes());
-    let doc: document::Document = decode_document(&mut reader).unwrap();
-    let graph = pdg::pdg::from_document(&doc);
-    assert_eq!(graph.graph.node_count(), 2);
-    assert_eq!(graph.graph.edge_count(), 1);
-}
+// #[test]
+// fn pdg_graph_transfer_generation_test() {
+//     use std::io::BufReader;
+//     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+// {"calling_tid":11358,"context_uid":1,"correlation_id":743,"hprof_kind":"cupti_callback","id":4,"name":"cudaMalloc","ptr":1099882823680,"size":112,"symbol_name":"","wall_end":1522732322548815154,"wall_start":1522732322547936932}
+// {"calling_tid":11358,"context_uid":1,"correlation_id":745,"hprof_kind":"cupti_callback","id":6,"name":"cudaMalloc","ptr":70368511724768,"size":1024,"symbol_name":"","wall_end":1522732322549163887,"wall_start":1522732322549117684}
+// {"calling_tid":11358,"context_uid":1,"correlation_id":744,"count":112,"cuda_memcpy_kind":3,"dst":1099882823680,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70368511724768,"symbol_name":"","wall_end":1522732322549018855,"wall_start":1522732322548899498}
+// {"correlation_id":744,"cuda_device_id":0,"cuda_memcpy_kind":"htod","dst_kind":"device","dur":0,"hprof_kind":"cupti_activity","kind":"cupti_memcpy","runtime_correlation_id":0,"src_kind":"pageable","start":0,"stream_id":7}
+// "#;
+//     let mut reader = BufReader::new(data.as_bytes());
+//     let doc: document::Document = decode_document(&mut reader).unwrap();
+//     let graph = pdg::pdg::from_document(&doc);
+//     assert_eq!(graph.graph.node_count(), 2);
+//     assert_eq!(graph.graph.edge_count(), 1);
+// }
 
-#[test]
-fn pdg_graph_host_transfer_generation_test() {
-    use std::io::BufReader;
-    let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
-{"calling_tid":11358,"context_uid":1,"correlation_id":743,"hprof_kind":"cupti_callback","id":4,"name":"cudaMalloc","ptr":1099882823680,"size":112,"symbol_name":"","wall_end":1522732322548815154,"wall_start":1522732322547936932}
-{"calling_tid":11358,"context_uid":1,"correlation_id":744,"count":112,"cuda_memcpy_kind":1,"dst":1099882823680,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70368511724768,"symbol_name":"","wall_end":1522732322549018855,"wall_start":1522732322548899498}
-{"correlation_id":744,"cuda_device_id":0,"cuda_memcpy_kind":"htod","dst_kind":"device","dur":0,"hprof_kind":"cupti_activity","kind":"cupti_memcpy","runtime_correlation_id":0,"src_kind":"pageable","start":0,"stream_id":7}
-"#;
-    let mut reader = BufReader::new(data.as_bytes());
-    let doc: document::Document = decode_document(&mut reader).unwrap();
-    let graph = pdg::pdg::from_document(&doc);
-    assert_eq!(graph.graph.node_count(), 2);
-    assert_eq!(graph.graph.edge_count(), 1);
-}
+// #[test]
+// fn pdg_graph_host_transfer_generation_test() {
+//     use std::io::BufReader;
+//     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+// {"calling_tid":11358,"context_uid":1,"correlation_id":743,"hprof_kind":"cupti_callback","id":4,"name":"cudaMalloc","ptr":1099882823680,"size":112,"symbol_name":"","wall_end":1522732322548815154,"wall_start":1522732322547936932}
+// {"calling_tid":11358,"context_uid":1,"correlation_id":744,"count":112,"cuda_memcpy_kind":1,"dst":1099882823680,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70368511724768,"symbol_name":"","wall_end":1522732322549018855,"wall_start":1522732322548899498}
+// {"correlation_id":744,"cuda_device_id":0,"cuda_memcpy_kind":"htod","dst_kind":"device","dur":0,"hprof_kind":"cupti_activity","kind":"cupti_memcpy","runtime_correlation_id":0,"src_kind":"pageable","start":0,"stream_id":7}
+// "#;
+//     let mut reader = BufReader::new(data.as_bytes());
+//     let doc: document::Document = decode_document(&mut reader).unwrap();
+//     let graph = pdg::pdg::from_document(&doc);
+//     assert_eq!(graph.graph.node_count(), 2);
+//     assert_eq!(graph.graph.edge_count(), 1);
+// }
 
 #[test]
 fn test_matrix_mul() {
@@ -275,27 +275,27 @@ fn test_matrix_mul() {
     println!("The longest path is: {}", graph.find_longest_path());
 }
 
-#[test]
-fn large_file() {
-    use std::env;
-    use std::fs::File;
-    use std::io::prelude::*;
+// #[test]
+// fn large_file() {
+//     use std::env;
+//     use std::fs::File;
+//     use std::io::prelude::*;
 
-    use std::io::BufReader;
-    //     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
-    // {"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
-    // "#;
-    let mut f = File::open("/Users/dominicgrande/uiuc/thesis/heteroprof-rs/src/big2.cprof")
-        .expect("file not found");
+//     use std::io::BufReader;
+//     //     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
+//     // {"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
+//     // "#;
+//     let mut f = File::open("/Users/dominicgrande/uiuc/thesis/heteroprof-rs/src/big2.cprof")
+//         .expect("file not found");
 
-    let mut contents = String::new();
-    f.read_to_string(&mut contents)
-        .expect("something went wrong reading the file");
-    let mut reader = BufReader::new(contents.as_bytes());
-    let doc: document::Document = decode_document(&mut reader).unwrap();
-    let mut graph = pdg::pdg::from_document(&doc);
-    println!("The node count is: {}", graph.graph.node_count());
-    println!("The edge count is: {}", graph.graph.edge_count());
-    graph.find_longest_path();
-    // println!("The longest path is: {}", graph.find_longest_path());
-}
+//     let mut contents = String::new();
+//     f.read_to_string(&mut contents)
+//         .expect("something went wrong reading the file");
+//     let mut reader = BufReader::new(contents.as_bytes());
+//     let doc: document::Document = decode_document(&mut reader).unwrap();
+//     let mut graph = pdg::pdg::from_document(&doc);
+//     println!("The node count is: {}", graph.graph.node_count());
+//     println!("The edge count is: {}", graph.graph.edge_count());
+//     graph.find_longest_path();
+//     // println!("The longest path is: {}", graph.find_longest_path());
+// }
