@@ -5,8 +5,9 @@ extern crate priority_queue;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
 use self::petgraph::algo::{astar, bellman_ford, dijkstra};
-use self::petgraph::graph::Graph;
+use self::petgraph::graph::{Graph, NodeIndex};
 use self::petgraph::graphmap::DiGraphMap;
+use self::petgraph::Directed;
 use self::petgraph::Direction;
 use self::priority_queue::PriorityQueue;
 
@@ -42,10 +43,10 @@ untouched
 //For now could just increment a counter
 pub struct PDG {
     next_id: u64,
-    value_map: HashMap<u64, u64>,
+    value_map: HashMap<u64, NodeIndex<u32>>,
     current_edge_number: u64,
     current_node_number: u64,
-    pub graph: DiGraphMap<u64, u64>,
+    pub graph: Graph<&u64, f64>,
     pub computes: HashMap<u64, Compute>,
     pub transfers: HashMap<u64, Transfer>,
 }
@@ -54,8 +55,8 @@ impl PDG {
     pub fn new() -> PDG {
         return PDG {
             next_id: 0,
-            value_map: HashMap::new(),
-            graph: DiGraphMap::new(),
+            value_map: HashMap::<u64, NodeIndex<u32>>::new(),
+            graph: Graph::<u64, f64>::new(),
             computes: HashMap::new(),
             transfers: HashMap::new(),
             current_edge_number: 0,
@@ -72,34 +73,19 @@ impl PDG {
     ) {
         // println!("Adding compute!");
         let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-        // match strong_ptr {
-        //     Some(s) => println!("Pointer: {}", s.ptr),
-        //     None => {
-        //         println!("There is no source pointer");
-        //     }
-        //     _ => {
-        //         println!("Undefined behaviour");
-        //     }
-        // }
-        let src_ptr_unwrap = strong_ptr.unwrap().ptr; //Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
+        let src_ptr_unwrap = strong_ptr.unwrap().ptr;
+
+        let dst_ptr: Option<Rc<_>> = dst_ptr.upgrade();
+        let dst_ptr_unwrap = dst_ptr.unwrap().ptr;
 
         // let src_ptr_unwrap = Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
 
         // self.graph.add_edge(1, 2, 1);
         let key = {
-            let node_itr = self.graph.nodes();
-            let mut current_key = self.current_node_number;
+            let node_itr = self.graph.raw_nodes().iter();
+            let mut current_key;
             self.current_node_number += 1;
-
-            //Look to see if we have seen this value before
-            //We will often see this in the case of the src of
-            //of a transfer.
             for (key, value) in self.value_map.iter() {
-                // let strong_value: Option<Rc<_>> = value.upgrade();
-                // let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
-                // println!("The compute value ptr is: {}", value_ptr);
-                // println!("The compute src_ptr is {}", src_ptr_unwrap);
-                //
                 if *key == src_ptr_unwrap {
                     // println!("They're equal!!!");
                     current_key = *value;
@@ -112,11 +98,14 @@ impl PDG {
             current_key
         };
         //Value map should contain ptr as key, and current node number as value
-        self.value_map
-            .insert(src_ptr_unwrap, self.current_node_number);
+        self.value_map.insert(src_ptr_unwrap, key);
 
-        self.graph
-            .add_edge(key, self.current_node_number, self.current_edge_number);
+        let src_node = key; //self.graph.add_node(key);
+        let dst_node: NodeIndex<u32> = self.graph.add_node(&self.current_node_number);
+
+        self.graph.add_edge(src_node, dst_node, 1 as f64);
+        self.value_map.insert(dst_ptr_unwrap, dst_node);
+
         self.computes.insert(self.current_edge_number, c);
         self.current_node_number += 1;
         self.current_edge_number += 1;
@@ -129,68 +118,20 @@ impl PDG {
         src_ptr: Weak<value::Value>,
         dst_ptr: Weak<value::Value>,
     ) {
-        // println!("Add the transfer!");
-        // println!("Strong references 1: {}", Rc::strong_count(&src_ptr));
-        // let x = src_ptr.ptr;
         let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-        // match strong_ptr {
-        //     None => {
-        //         println!("Fuck");
-        //     }
-        //     Some(s) => {
-        //         println!("anti");
-        //         println!("{}", s.ptr);
-        //     }
-        //     _ => {
-        //         //fucking nothing
-        //     }
-        // }
-        // println!(
-        //     "Strong references 1: {}",
-        //     Rc::strong_count(&strong_ptr.unwrap())
-        // );
-        let src_ptr_unwrap = strong_ptr.unwrap().ptr; //Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
-                                                      // println!("Adding transfer 3");
-
-        // self.graph.add_edge(1, 2, 1);
-        // let key = {
-        //     let node_itr = self.graph.nodes();
-        //     let mut current_key = self.current_node_number;
-        //     self.current_node_number += 1;
-
-        //     //Look to see if we have seen this value before
-        //     //We will often see this in the case of the src of
-        //     //of a transfer.
-        //     for (key, value) in self.value_map.iter() {
-        //         let strong_value: Option<Rc<_>> = value.upgrade();
-        //         let strong_ptr: Option<Rc<_>> = src_ptr.upgrade();
-        //         let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
-        //         let src_ptr_unwrap = Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
-        //         println!("The value ptr is: {}", value_ptr);
-        //         println!("The src_ptr is {}", src_ptr_unwrap);
-
-        //         if value_ptr == src_ptr_unwrap {
-        //             println!("HERE");
-        //             current_key = *key;
-        //         }
-        //     }
-        //     current_key
-        // };
+        let src_ptr_unwrap = strong_ptr.unwrap().ptr;
+        let dst_ptr: Option<Rc<_>> = dst_ptr.upgrade();
+        let dst_ptr_unwrap = dst_ptr.unwrap().ptr;
 
         let key = {
-            let node_itr = self.graph.nodes();
-            let mut current_key = self.current_node_number;
+            // let node_itr = self.graph.nodes();
+            let mut current_key;
             // self.current_node_number += 1;
 
             //Look to see if we have seen this value before
             //We will often see this in the case of the src of
             //of a transfer.
             for (key, value) in self.value_map.iter() {
-                // let strong_value: Option<Rc<_>> = value.upgrade();
-                // let value_ptr = Rc::try_unwrap(strong_value.unwrap()).unwrap().ptr;
-                // println!("The compute value ptr is: {}", value_ptr);
-                // println!("The compute src_ptr is {}", src_ptr_unwrap);
-                //
                 if *key == src_ptr_unwrap {
                     current_key = *value;
                     break;
@@ -202,86 +143,21 @@ impl PDG {
             current_key
         };
 
-        self.graph
-            .add_edge(key, self.current_node_number, self.current_edge_number);
-        self.value_map
-            .insert(src_ptr_unwrap, self.current_node_number);
+        self.current_node_number += 1;
+        self.current_edge_number += 1;
+        let dst_node = self.graph.add_node(&self.current_node_number);
+        self.graph.add_edge(key, dst_node, 1);
+        self.value_map.insert(dst_ptr_unwrap, dst_node);
+
         self.transfers.insert(self.current_edge_number, t);
         self.current_node_number += 1;
         self.current_edge_number += 1;
-
-        // match node_itr {
-        //     Some(node_itr) => {
-
-        //     }
-        //     None => {
-        //         self.graph.add_edge(1, 3, self.current_edge_number);
-        //         self.transfers.insert(self.current_edge_number, *t);
-        //         self.current_edge_number += 1;
-        //     }
-        // }
     }
 
-    fn edge_cost(&mut self) -> u64 {
-        return 1;
-    }
+    fn longest_path(&mut self, start_node: NodeIndex, sinks: &Vec<NodeIndex>) -> u64 {
+        let values = dijkstra(self.graph, start_node, Some(sinks[0]), edge_cost);
 
-    fn longest_path(&mut self, start_node: u64, sinks: &Vec<u64>) -> u64 {
-        //Need to copy a reference to every node in the graph to the priority queue
-        let mut hash_weight = HashMap::new();
-        let mut pq = PriorityQueue::new();
-        for node in self.graph.nodes() {
-            //Populate the priority queue with all the nodes
-            //This is not the most memory efficient method, but should not pose an issue
-            pq.push(node, -MAX);
-        }
-        pq.change_priority(&start_node, 0 as i64);
-        hash_weight.insert(start_node, 0 as i64);
-
-        // let output = dijkstra(self.graph, start_node, Some(sinks[0]), *e.weight());
-        while pq.len() > 0 {
-            //Should always have a value that we can pop off the PriorityQueue here
-            let (current_node, current_weight) = pq.pop().unwrap();
-            let neighbor_nodes = self.graph.neighbors(current_node);
-            let neighbor_edges = self.graph.edges(current_node);
-            for edge in neighbor_edges {
-                let (_, dst_node, weight) = edge;
-                let alt: i64 = current_weight - 1; // (*weight as i64);
-                match hash_weight.entry(dst_node) {
-                    Occupied(mut s) => {
-                        if alt < *s.get() {
-                            pq.change_priority(&dst_node, alt);
-                            *s.get_mut() = alt;
-                        }
-                    }
-                    Vacant(s) => {
-                        pq.change_priority(&dst_node, alt);
-                        s.insert(alt);
-                    }
-                }
-            }
-        }
-
-        let mut max_path = 0 as i64;
-
-        let lengths = hash_weight.iter();
-        for entry in sinks {
-            // println!("Sinks: {}", entry);
-        }
-
-        for length in lengths {
-            let (k, v) = length;
-            // println!("Length: {}", *v);
-
-            if sinks.contains(k) {
-                // println!("Path {}", *v);
-                if -*v > max_path {
-                    max_path = -*v;
-                }
-            }
-        }
-
-        max_path as u64
+        0
     }
 
     pub fn num_nodes(&mut self) -> usize {
@@ -299,7 +175,7 @@ impl PDG {
 
         //Must scope immutable self so that it doesn't freak out with mutable reference
         {
-            let mut _nodes = self.graph.nodes();
+            let mut _nodes = self.graph.node_indices();
 
             for node in _nodes {
                 let x = node;
@@ -331,8 +207,14 @@ impl PDG {
         // let path_length = { self.longest_path(source, &sinks) };
         // longest_path.push(path_length);
 
-        *longest_path.iter().max().unwrap()
+        // *longest_path.iter().max().unwrap()
+
+        0
     }
+}
+
+fn edge_cost(cm: u64) -> u64 {
+    return 1;
 }
 
 fn handle_cuda_malloc(cm: &callback::CudaMallocS, mut state: cuda::State) -> cuda::State {
