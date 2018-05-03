@@ -293,7 +293,7 @@ fn large_file() {
     //     let data = r#"{"build":"20180402-174617+0000","git":"dirty","version":"0.1.0"}
     // {"blockDim":{"x":32,"y":32,"z":1},"calling_tid":129601,"context_uid":1,"correlation_id":737,"gridDim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","symbol_name":"","wall_end":1525127168475315442,"wall_start":1525127168475260106}
     // "#;
-    let mut f = File::open("/Users/dominicgrande/uiuc/thesis/heteroprof-rs/src/big2.cprof")
+    let mut f = File::open("/Users/dominicgrande/uiuc/thesis/heteroprof-rs/src/big5split.cprof")
         .expect("file not found");
 
     let mut contents = String::new();
@@ -302,6 +302,7 @@ fn large_file() {
     let mut reader = BufReader::new(contents.as_bytes());
     let doc: document::Document = decode_document(&mut reader).unwrap();
     let mut graph = pdg::pdg::from_document(&doc);
-    println!("The node count is: {}", graph.graph.node_count());
-    println!("The longest path is: {}", graph.find_longest_path());
+    let document_stats = statistics::DocumentStatistics::new(doc);
+    document_stats.memory_transfer_statistics();
+    // println!("The longest path is: {}", graph.find_longest_path());
 }

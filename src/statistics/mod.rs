@@ -91,7 +91,7 @@ impl DocumentStatistics {
             match callback_iter {
                 &Record::CudaMemcpy(ref s) => {
                     let ref y = s.count;
-                    println!("{}", y);
+                    println!("Memory transfer!: {}", y);
                 }
                 _ => {
                     //Don't need to do anything, as we are only interested in memory transfers

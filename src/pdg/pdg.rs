@@ -4,7 +4,8 @@ extern crate petgraph;
 extern crate priority_queue;
 
 use self::interval::interval_set::{IntervalSet, ToIntervalSet};
-use self::petgraph::algo::dijkstra;
+use self::petgraph::algo::{astar, bellman_ford, dijkstra};
+use self::petgraph::graph::Graph;
 use self::petgraph::graphmap::DiGraphMap;
 use self::petgraph::Direction;
 use self::priority_queue::PriorityQueue;
@@ -221,6 +222,10 @@ impl PDG {
         // }
     }
 
+    fn edge_cost(&mut self) -> u64 {
+        return 1;
+    }
+
     fn longest_path(&mut self, start_node: u64, sinks: &Vec<u64>) -> u64 {
         //Need to copy a reference to every node in the graph to the priority queue
         let mut hash_weight = HashMap::new();
@@ -232,7 +237,8 @@ impl PDG {
         }
         pq.change_priority(&start_node, 0 as i64);
         hash_weight.insert(start_node, 0 as i64);
-        // dijkstra(self.graph, start_node, Some(sinks[0]), 1);
+
+        // let output = dijkstra(self.graph, start_node, Some(sinks[0]), *e.weight());
         while pq.len() > 0 {
             //Should always have a value that we can pop off the PriorityQueue here
             let (current_node, current_weight) = pq.pop().unwrap();
@@ -243,7 +249,7 @@ impl PDG {
                 let alt: i64 = current_weight - 1; // (*weight as i64);
                 match hash_weight.entry(dst_node) {
                     Occupied(mut s) => {
-                        if alt > *s.get() {
+                        if alt < *s.get() {
                             pq.change_priority(&dst_node, alt);
                             *s.get_mut() = alt;
                         }
