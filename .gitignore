@@ -5,6 +5,7 @@ Cargo.lock
 .DS_Store
 src/.DS_Store
 
+*.dot
 *.txt
 *.cprof
 .vscode/launch.json
