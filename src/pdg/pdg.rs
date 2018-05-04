@@ -78,9 +78,6 @@ impl<'a> PDG<'a> {
         let dst_ptr: Option<Rc<_>> = dst_ptr.upgrade();
         let dst_ptr_unwrap = dst_ptr.unwrap().ptr;
 
-        // let src_ptr_unwrap = Rc::try_unwrap(strong_ptr.unwrap()).unwrap().ptr;
-
-        // self.graph.add_edge(1, 2, 1);
         let key = {
             let node_itr = self.graph.raw_nodes().iter();
             let mut current_key = NodeIndex::new(0);
@@ -106,7 +103,7 @@ impl<'a> PDG<'a> {
         let boxed_value = Box::new(c.correlation_id);
         let dst_node: NodeIndex<u32> = self.graph.add_node(Box::leak(boxed_value));
 
-        self.graph.add_edge(src_node, dst_node, 1.0);
+        self.graph.add_edge(src_node, dst_node, c.duration as f64);
         self.value_map.insert(dst_ptr_unwrap, dst_node);
 
         self.computes.insert(self.current_edge_number, c);
@@ -150,7 +147,7 @@ impl<'a> PDG<'a> {
         self.current_node_number += 1;
         self.current_edge_number += 1;
         let dst_node = self.graph.add_node(Box::leak(Box::new(t.correlation_id)));
-        self.graph.add_edge(key, dst_node, 1.0);
+        self.graph.add_edge(key, dst_node, t.dur as f64);
         self.value_map.insert(dst_ptr_unwrap, dst_node);
 
         self.transfers.insert(self.current_edge_number, t);
@@ -248,7 +245,7 @@ fn handle_cuda_malloc(
         AddressSpace::UVA,
     ));
     state.allocations.insert(Rc::clone(&allocation));
-    println!("Adding cuda malloc to graph");
+    // println!("Adding cuda malloc to graph");
     let boxed_value = Box::new(cm.correlation_id);
     let dst_node: NodeIndex<u32> = graph.graph.add_node(Box::leak(boxed_value));
     graph.value_map.insert(cm.ptr, dst_node);
@@ -344,8 +341,8 @@ fn handle_cuda_memcpy(
             //Create a value on the Device
 
             let dst_rc = state.update_allocations(cm.id, cm.dst, cm.count);
-            println!("src_rc: {:?}", src_rc);
-            println!("dst_rc: {:?}", dst_rc);
+            // println!("src_rc: {:?}", src_rc);
+            // println!("dst_rc: {:?}", dst_rc);
 
             (src_rc, dst_rc)
         }
