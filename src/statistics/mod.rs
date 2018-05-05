@@ -10,16 +10,18 @@ they are running for.
  */
 
 use document;
+use pdg::pdg::PDG;
 
 //Necessary for hash map
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use self::MemoryTransferSizes::*;
+// use self::MemoryTransferSizes::*;
+use std::collections::hash_map::Entry;
 use std::slice::Iter;
 
 use callback::Record;
-
+/* Old code for histogramming
 //Talk to Carl what these sizes should be, in terms of what would be most useful for analysis.
 #[derive(Debug, Hash, PartialEq, Copy, Clone)]
 pub enum MemoryTransferSizes {
@@ -72,33 +74,86 @@ where
             }
         }
     }
+}*/
+
+#[derive(Debug, Hash, PartialEq, Eq)]
+enum BinOverLapTypes {
+    ComputeOnly,
+    TransferOnly,
+    ComputeTransfer,
 }
 
-pub struct DocumentStatistics {
-    doc: document::Document,
+pub struct DocumentStatistics<'a> {
+    graph: &'a mut PDG<'a>,
+    overlap_bins: HashMap<BinOverLapTypes, u64>,
 }
 
-impl DocumentStatistics {
-    pub fn new(doc: document::Document) -> DocumentStatistics {
-        return DocumentStatistics { doc: doc };
+impl<'a> DocumentStatistics<'a> {
+    pub fn new(pdg: &'a mut PDG<'a>) -> DocumentStatistics<'a> {
+        return DocumentStatistics::<'a> {
+            graph: pdg,
+            overlap_bins: HashMap::new(),
+        };
     }
 
-    pub fn memory_transfer_statistics(&self) {
-        let memory_histogram: Histogram<MemoryTransferSizes> =
-            Histogram::new(MemoryTransferSizes::iterator());
+    pub fn generate_bins(&mut self) {
+        let compute_iter = self.graph.computes.iter();
+        let transfer_iter = self.graph.transfers.iter();
+    }
 
-        for callback_iter in &self.doc.apis {
-            match callback_iter {
-                &Record::CudaMemcpy(ref s) => {
-                    let ref y = s.count;
-                    println!("Memory transfer!: {}", y);
-                }
-                _ => {
-                    //Don't need to do anything, as we are only interested in memory transfers
-                }
+    fn compute_only_bin(&mut self) {
+        match self.overlap_bins.entry(BinOverLapTypes::ComputeOnly) {
+            Entry::Occupied(ent) => {
+                let ent_mut = ent.into_mut();
+                *ent_mut += 1;
+            }
+            Entry::Vacant(ent) => {
+                ent.insert(1);
             }
         }
     }
 
-    pub fn kernel_statistics() {}
+    fn transfer_only_bin(&mut self) {
+        match self.overlap_bins.entry(BinOverLapTypes::TransferOnly) {
+            Entry::Occupied(ent) => {
+                let ent_mut = ent.into_mut();
+                *ent_mut += 1;
+            }
+            Entry::Vacant(ent) => {
+                ent.insert(1);
+            }
+        }
+    }
+
+    fn compute_transfer_bin(&mut self) {
+        match self.overlap_bins.entry(BinOverLapTypes::ComputeTransfer) {
+            Entry::Occupied(ent) => {
+                let ent_mut = ent.into_mut();
+                *ent_mut += 1;
+            }
+            Entry::Vacant(ent) => {
+                ent.insert(1);
+            }
+        }
+    }
+
+    //Old histogram generation code
+    // pub fn memory_transfer_statistics(&self) {
+    //     let memory_histogram: Histogram<MemoryTransferSizes> =
+    //         Histogram::new(MemoryTransferSizes::iterator());
+
+    //     for callback_iter in &self.doc.apis {
+    //         match callback_iter {
+    //             &Record::CudaMemcpy(ref s) => {
+    //                 let ref y = s.count;
+    //                 println!("Memory transfer!: {}", y);
+    //             }
+    //             _ => {
+    //                 //Don't need to do anything, as we are only interested in memory transfers
+    //             }
+    //         }
+    //     }
+    // }
+
+    // pub fn kernel_statistics() {}
 }
