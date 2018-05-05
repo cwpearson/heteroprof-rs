@@ -13,6 +13,7 @@ use document;
 use pdg::pdg::PDG;
 
 //Necessary for hash map
+use pdg::transfer::Transfer;
 use std::collections::HashMap;
 use std::hash::Hash;
 
@@ -98,7 +99,74 @@ impl<'a> DocumentStatistics<'a> {
 
     pub fn generate_bins(&mut self) {
         let compute_iter = self.graph.computes.iter();
-        let transfer_iter = self.graph.transfers.iter();
+        let mut transfer_iter = self.graph.transfers.iter();
+        // let mut peeked_iter = transfer_iter.peekable();
+        let mut compute_transfer = 0;
+        let mut compute_only = 0;
+        let mut transfer_only = 0;
+        let mut peeked_transfer = transfer_iter.next();
+
+        for compute in compute_iter {
+            let (_, compute_val) = compute;
+            let compute_start = compute_val.start;
+            let compute_end = compute_start + compute_val.duration;
+            // if iterate {
+            //     peeked_iter.next();
+            // }
+
+            // let peeked_transfer = peeked_iter.peek();
+            match peeked_transfer {
+                Some(v) => {
+                    let (_, transfer_value) = v;
+                    let transfer_start_time = transfer_value.start;
+                    let transfer_duration = transfer_value.dur;
+                    let transfer_end = transfer_start_time + transfer_duration;
+
+                    //Check to see the current overlap
+                    if transfer_start_time < compute_start && transfer_end > compute_end {
+                        compute_transfer += 1;
+                    } else if transfer_start_time > compute_start
+                        && transfer_start_time < compute_end
+                    {
+                        compute_transfer += 1;
+                    } else if transfer_end < compute_end {
+                        compute_transfer += 1;
+                        peeked_transfer = transfer_iter.next();
+                        let mut condition = self.check_recursive(peeked_transfer, compute_end);
+                        while condition {
+                            compute_transfer += 1;
+                            peeked_transfer = transfer_iter.next();
+                        }
+                    } else if transfer_start_time > compute_end {
+                        compute_only += 1;
+                    } else if transfer_end < compute_start {
+                        transfer_only += 1;
+                        peeked_transfer = transfer_iter.next();
+                    }
+                }
+                _ => {
+                    compute_only += 1;
+                }
+            }
+        }
+    }
+
+    fn check_recursive(&self, transfer: Option<(&u64, &Transfer)>, compute_end: u64) -> bool {
+        let val = match transfer {
+            Some(v) => {
+                let (_, transfer_value) = v;
+                let transfer_start_time = transfer_value.start;
+                let transfer_duration = transfer_value.dur;
+                let transfer_end = transfer_start_time + transfer_duration;
+                if transfer_end < compute_end {
+                    true
+                } else {
+                    false
+                }
+            }
+            _ => false,
+        };
+        val
     }
 
     fn compute_only_bin(&mut self) {
