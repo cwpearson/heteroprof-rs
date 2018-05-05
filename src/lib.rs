@@ -306,3 +306,29 @@ fn large_file() {
     // graph.find_longest_path();
     // println!("The longest path is: {}", graph.find_longest_path());
 }
+
+#[test]
+fn matrix_mul_stats() {
+    use std::io::BufReader;
+    let data = r#"
+    
+{"calling_tid":46056,"context_uid":0,"correlation_id":732,"hprof_kind":"cupti_callback","id":1,"name":"cudaMalloc","ptr":1099633262592,"size":409600,"symbol_name":"","wall_end":1525148677202172835,"wall_start":1525148677085450346}
+{"calling_tid":46056,"context_uid":1,"correlation_id":733,"hprof_kind":"cupti_callback","id":2,"name":"cudaMalloc","ptr":1099633672192,"size":819200,"symbol_name":"","wall_end":1525148677202565817,"wall_start":1525148677202527174}
+{"calling_tid":46056,"context_uid":1,"correlation_id":734,"hprof_kind":"cupti_callback","id":3,"name":"cudaMalloc","ptr":1099634491392,"size":819200,"symbol_name":"","wall_end":1525148677202649184,"wall_start":1525148677202617881}
+
+{"calling_tid":46056,"context_uid":1,"correlation_id":735,"count":409600,"cuda_memcpy_kind":1,"dst":1099633262592,"hprof_kind":"cupti_callback","id":4,"name":"cudaMemcpy","src":70366851760144,"symbol_name":"","wall_end":1525148677202974029,"wall_start":1525148677202701914}
+{"calling_tid":46056,"context_uid":1,"correlation_id":736,"count":819200,"cuda_memcpy_kind":1,"dst":1099633672192,"hprof_kind":"cupti_callback","id":5,"name":"cudaMemcpy","src":70366850908176,"symbol_name":"","wall_end":1525148677203417101,"wall_start":1525148677203045508}
+{"block_dim":{"x":32,"y":32,"z":1},"calling_tid":46056,"context_uid":1,"correlation_id":737,"grid_dim":{"x":20,"y":10,"z":1},"hprof_kind":"cupti_callback","id":6,"name":"cudaConfigureCall","shared_mem":0,"stream":0,"symbol_name":"","wall_end":1525148677203536095,"wall_start":1525148677203481914}
+
+{"arg":1099634491392,"calling_tid":46056,"context_uid":1,"correlation_id":738,"hprof_kind":"cupti_callback","id":7,"is_arg_deref":true,"name":"cudaSetupArgument","offset":0,"size":8,"symbol_name":"","wall_end":1525148677203776111,"wall_start":1525148677203734038}
+{"arg":1099633262592,"calling_tid":46056,"context_uid":1,"correlation_id":739,"hprof_kind":"cupti_callback","id":8,"is_arg_deref":true,"name":"cudaSetupArgument","offset":8,"size":8,"symbol_name":"","wall_end":1525148677203852757,"wall_start":1525148677203841757}
+{"arg":1099633672192,"calling_tid":46056,"context_uid":1,"correlation_id":740,"hprof_kind":"cupti_callback","id":9,"is_arg_deref":true,"name":"cudaSetupArgument","offset":16,"size":8,"symbol_name":"","wall_end":1525148677203919599,"wall_start":1525148677203908507}
+{"calling_tid":46056,"context_uid":1,"correlation_id":743,"func":268458084,"hprof_kind":"cupti_callback","id":12,"name":"cudaLaunch","params":[],"symbol_name":"","wall_end":1525148677204220899,"wall_start":1525148677204115694}
+"#;
+    let mut reader = BufReader::new(data.as_bytes());
+    let doc: document::Document = decode_document(&mut reader).unwrap();
+    let mut graph = pdg::pdg::from_document(&doc);
+    println!("Start document statistics");
+    let mut document_stats = statistics::DocumentStatistics::new(&mut graph);
+    document_stats.generate_bins();
+}
