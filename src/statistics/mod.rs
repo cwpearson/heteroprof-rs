@@ -21,12 +21,9 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use std::collections::hash_map::Entry;
-use std::slice::Iter;
 
 use self::gcollections::ops::*;
 use self::interval::interval_set::*;
-
-use callback::Record;
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 enum BinOverLapTypes {
@@ -126,41 +123,5 @@ impl<'a> DocumentStatistics<'a> {
             _ => false,
         };
         val
-    }
-
-    fn compute_only_bin(&mut self) {
-        match self.overlap_bins.entry(BinOverLapTypes::ComputeOnly) {
-            Entry::Occupied(ent) => {
-                let ent_mut = ent.into_mut();
-                *ent_mut += 1;
-            }
-            Entry::Vacant(ent) => {
-                ent.insert(1);
-            }
-        }
-    }
-
-    fn transfer_only_bin(&mut self) {
-        match self.overlap_bins.entry(BinOverLapTypes::TransferOnly) {
-            Entry::Occupied(ent) => {
-                let ent_mut = ent.into_mut();
-                *ent_mut += 1;
-            }
-            Entry::Vacant(ent) => {
-                ent.insert(1);
-            }
-        }
-    }
-
-    fn compute_transfer_bin(&mut self) {
-        match self.overlap_bins.entry(BinOverLapTypes::ComputeTransfer) {
-            Entry::Occupied(ent) => {
-                let ent_mut = ent.into_mut();
-                *ent_mut += 1;
-            }
-            Entry::Vacant(ent) => {
-                ent.insert(1);
-            }
-        }
     }
 }
