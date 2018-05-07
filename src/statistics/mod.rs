@@ -1,3 +1,6 @@
+extern crate gcollections;
+extern crate interval;
+
 /*
 Histogram of allocation sizes
 Total number of bytes in each bucket
@@ -17,65 +20,13 @@ use pdg::transfer::Transfer;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-// use self::MemoryTransferSizes::*;
 use std::collections::hash_map::Entry;
 use std::slice::Iter;
 
+use self::gcollections::ops::*;
+use self::interval::interval_set::*;
+
 use callback::Record;
-/* Old code for histogramming
-//Talk to Carl what these sizes should be, in terms of what would be most useful for analysis.
-#[derive(Debug, Hash, PartialEq, Copy, Clone)]
-pub enum MemoryTransferSizes {
-    ZeroToFiftyMB,
-    FiftyToOneHundredMB,
-    OverOneHundredMB,
-}
-
-impl Eq for MemoryTransferSizes {}
-
-impl MemoryTransferSizes {
-    pub fn iterator() -> Iter<'static, MemoryTransferSizes> {
-        static MEMORYTRANSFERSIZES: [MemoryTransferSizes; 3] =
-            [ZeroToFiftyMB, FiftyToOneHundredMB, OverOneHundredMB];
-        MEMORYTRANSFERSIZES.into_iter()
-    }
-}
-
-pub struct Histogram<EnumType>
-where
-    EnumType: Eq + Hash + 'static,
-{
-    keys: Iter<'static, EnumType>,
-    value_hashed: HashMap<EnumType, u64>,
-}
-
-impl<EnumType> Histogram<EnumType>
-where
-    EnumType: Eq + Hash,
-{
-    fn new(keys: Iter<'static, EnumType>) -> Histogram<EnumType> {
-        return Histogram {
-            keys: keys,
-            value_hashed: HashMap::<EnumType, u64>::new(),
-        };
-    }
-
-    fn add_value(&mut self, key: EnumType) {
-        //Most clone value, or else we will be inserting into the same hashmap (requiring it to be mutable),
-        //while we have a value from it (requiring it to be immutable)
-        let value = self.value_hashed.get(&key).cloned();
-        match value {
-            Some(v) => {
-                let new_val = v + 1;
-                self.value_hashed.insert(key, new_val);
-            }
-            None => {
-                //Don't believe this should happen, but just in case
-                self.value_hashed.insert(key, 1);
-            }
-        }
-    }
-}*/
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 enum BinOverLapTypes {
@@ -98,82 +49,65 @@ impl<'a> DocumentStatistics<'a> {
     }
 
     pub fn generate_bins(&mut self) {
-        let mut compute_transfer = 0;
-        let mut compute_only = 0;
-        let mut transfer_only = 0;
-        {
-            let mut transfer_iter = self.graph.transfers.iter();
-            let mut peeked_transfer = transfer_iter.next();
+        let mut compute_interval_set = vec![(0, 0)].to_interval_set();
+        let mut transfer_interval_set = vec![(0, 0)].to_interval_set();
 
-            for compute in self.graph.computes.iter() {
-                let (_, compute_val) = compute;
-                let compute_start = compute_val.start;
-                let compute_end = compute_start + compute_val.duration;
+        for compute in self.graph.computes.iter() {
+            let (_, compute_val) = compute;
+            let compute_start = compute_val.start;
+            let compute_end = compute_val.start + compute_val.duration;
 
-                match peeked_transfer {
-                    Some(v) => {
-                        let (_, transfer_value) = v;
-                        let transfer_start_time = transfer_value.start;
-                        let transfer_duration = transfer_value.dur;
-                        let transfer_end = transfer_start_time + transfer_duration;
-                        println!(
-                            "Compute Start: {}; Compute End: {}",
-                            compute_start, compute_end
-                        );
-
-                        println!(
-                            "Transfer Start: {}; Transfer End: {}",
-                            transfer_start_time, transfer_end
-                        );
-
-                        //Check to see the current overlap
-                        if transfer_start_time < compute_start && transfer_end > compute_end {
-                            compute_transfer += 1;
-                        } else if transfer_start_time > compute_start
-                            && transfer_start_time < compute_end
-                        {
-                            compute_transfer += 1;
-                        } else if transfer_end < compute_end {
-                            compute_transfer += 1;
-                            peeked_transfer = transfer_iter.next();
-                            let mut condition = self.check_recursive(peeked_transfer, compute_end);
-                            while condition {
-                                compute_transfer += 1;
-                                peeked_transfer = transfer_iter.next();
-                                condition = self.check_recursive(peeked_transfer, compute_end)
-                            }
-                        } else if transfer_start_time > compute_end {
-                            println!("Transfer Start after Compute end");
-
-                            compute_only += 1;
-                        } else if transfer_end < compute_start {
-                            println!("Transfer End before Compute Start");
-                            transfer_only += 1;
-                            peeked_transfer = transfer_iter.next();
-                        }
-                    }
-                    _ => {
-                        compute_only += 1;
-                    }
-                }
-            }
+            compute_interval_set =
+                compute_interval_set.union(&vec![(compute_start, compute_end)].to_interval_set());
         }
 
-        self.set_bins(compute_only, transfer_only, compute_transfer);
-    }
+        for transfer in self.graph.transfers.iter() {
+            let (_, transfer_val) = transfer;
+            let transfer_start = transfer_val.start;
+            let transfer_end = transfer_val.start + transfer_val.dur;
 
-    fn set_bins(&mut self, compute_only: u64, transfer_only: u64, compute_transfer: u64) {
-        self.overlap_bins
-            .insert(BinOverLapTypes::ComputeTransfer, compute_transfer);
-        self.overlap_bins
-            .insert(BinOverLapTypes::ComputeOnly, compute_only);
-        self.overlap_bins
-            .insert(BinOverLapTypes::TransferOnly, transfer_only);
+            transfer_interval_set = transfer_interval_set
+                .union(&vec![(transfer_start, transfer_end)].to_interval_set());
+        }
+
+        let mut compute_transfer_interval_set = compute_interval_set.clone();
+        compute_transfer_interval_set =
+            compute_transfer_interval_set.intersection(&transfer_interval_set);
+
+        let mut compute_interval_complement = compute_interval_set.clone();
+        let mut transfer_interval_complement = transfer_interval_set.clone();
+        compute_interval_complement = compute_interval_complement.complement();
+        transfer_interval_complement = transfer_interval_complement.complement();
+        compute_interval_set = compute_interval_set.intersection(&transfer_interval_complement);
+        transfer_interval_set = transfer_interval_set.intersection(&compute_interval_complement);
+
+        let mut compute_interval_set_count = 0;
+        let mut transfer_interval_set_count = 0;
+        let mut ct_interval_set_count = 0;
+        for interval in compute_interval_set.intervals {
+            println!("{:?}", interval);
+            compute_interval_set_count += interval.upper() - interval.lower();
+        }
+
+        for interval in transfer_interval_set.intervals {
+            transfer_interval_set_count += interval.upper() - interval.lower();
+        }
+
+        for interval in compute_transfer_interval_set.intervals {
+            ct_interval_set_count += interval.upper() - interval.lower();
+        }
 
         println!(
-            "Compute Only: {} ; Transfer Only: {} ; Compute Transfer: {}",
-            compute_only, transfer_only, compute_transfer
+            "Range of compute_interval_set: {}",
+            compute_interval_set_count
         );
+
+        println!(
+            "Range of transfer_interval_set: {}",
+            transfer_interval_set_count
+        );
+
+        println!("Range of compute_transfer_set: {}", ct_interval_set_count);
     }
 
     fn check_recursive(&self, transfer: Option<(&u64, &Transfer)>, compute_end: u64) -> bool {
@@ -229,24 +163,4 @@ impl<'a> DocumentStatistics<'a> {
             }
         }
     }
-
-    //Old histogram generation code
-    // pub fn memory_transfer_statistics(&self) {
-    //     let memory_histogram: Histogram<MemoryTransferSizes> =
-    //         Histogram::new(MemoryTransferSizes::iterator());
-
-    //     for callback_iter in &self.doc.apis {
-    //         match callback_iter {
-    //             &Record::CudaMemcpy(ref s) => {
-    //                 let ref y = s.count;
-    //                 println!("Memory transfer!: {}", y);
-    //             }
-    //             _ => {
-    //                 //Don't need to do anything, as we are only interested in memory transfers
-    //             }
-    //         }
-    //     }
-    // }
-
-    // pub fn kernel_statistics() {}
 }
